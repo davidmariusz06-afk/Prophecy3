@@ -2,15 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Prophecy</title>
-<meta name="description" content="Body Transformation Tracker — track weight, lifts, and body composition">
-<meta name="theme-color" content="#07070e">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Prophecy">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%2307070e'/%3E%3Ctext x='256' y='340' text-anchor='middle' font-size='280' font-family='Arial'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -18,125 +11,13 @@
     --bg: #07070e; --surface: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.08);
     --text: #e4e4f0; --muted: #555; --cyan: #00e5ff; --green: #69ff47;
     --yellow: #ffe040; --pink: #ff4d8d; --orange: #ff6b2b; --purple: #c77dff;
-    --iron: #1a1a2e; --theme-noise-op:0.025; --theme-overlay:transparent;
+    --iron: #1a1a2e;
   }
-  body::before { content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
-    background:var(--theme-overlay,transparent); }
-  body.theme-neon {
-    --bg:#020010; --iron:#0d0020; --theme-noise-op:0.015;
-    --theme-overlay:radial-gradient(ellipse at 20% 50%,rgba(199,125,255,.08) 0%,transparent 60%),
-      radial-gradient(ellipse at 80% 20%,rgba(0,229,255,.06) 0%,transparent 50%);
-  }
-  body.theme-neon @keyframes prGlow {
-  0%   { box-shadow: 0 0 0 rgba(105,255,71,0); }
-  30%  { box-shadow: 0 0 24px rgba(105,255,71,0.6), 0 0 48px rgba(105,255,71,0.3); transform: scale(1.02); }
-  60%  { box-shadow: 0 0 12px rgba(105,255,71,0.3); transform: scale(1.01); }
-  100% { box-shadow: 0 0 0 rgba(105,255,71,0); transform: scale(1); }
-}
-.pr-new-glow { animation: prGlow 1.4s ease-out forwards; }
-
-@keyframes fullscreenFadeIn {
-  from { opacity:0; transform:scale(0.96); }
-  to   { opacity:1; transform:scale(1); }
-}
-.chart-fullscreen-modal {
-  position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px; animation:fullscreenFadeIn 0.2s ease-out;
-}
-.chart-fullscreen-modal canvas { max-width:100%; max-height:80vh; }
-
-.card { border-color:rgba(199,125,255,.14)!important; background:rgba(199,125,255,.03)!important; }
-  body.theme-military {
-    --bg:#0a0d06; --text:#c8d4b0; --muted:#5a6440; --iron:#141a08;
-    --cyan:#7fb069; --green:#a3c585; --yellow:#d4a843; --pink:#c0392b; --orange:#d4781a; --purple:#8b9467;
-    --theme-noise-op:0.04;
-    --theme-overlay:repeating-linear-gradient(0deg,rgba(100,120,60,.012) 0px,rgba(100,120,60,.012) 1px,transparent 1px,transparent 3px);
-  }
-  body.theme-military @keyframes prGlow {
-  0%   { box-shadow: 0 0 0 rgba(105,255,71,0); }
-  30%  { box-shadow: 0 0 24px rgba(105,255,71,0.6), 0 0 48px rgba(105,255,71,0.3); transform: scale(1.02); }
-  60%  { box-shadow: 0 0 12px rgba(105,255,71,0.3); transform: scale(1.01); }
-  100% { box-shadow: 0 0 0 rgba(105,255,71,0); transform: scale(1); }
-}
-.pr-new-glow { animation: prGlow 1.4s ease-out forwards; }
-
-@keyframes fullscreenFadeIn {
-  from { opacity:0; transform:scale(0.96); }
-  to   { opacity:1; transform:scale(1); }
-}
-.chart-fullscreen-modal {
-  position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px; animation:fullscreenFadeIn 0.2s ease-out;
-}
-.chart-fullscreen-modal canvas { max-width:100%; max-height:80vh; }
-
-.card { border-color:rgba(120,150,60,.2)!important; background:rgba(80,100,40,.07)!important; }
-  body.theme-military .card-title { letter-spacing:.14em!important; text-transform:uppercase!important; font-size:11px!important; }
-  body.theme-military .nav-bar { border-color:rgba(120,150,60,.25)!important; }
-  body.theme-blood {
-    --bg:#060003; --text:#f5e8e8; --muted:#6b3030; --iron:#120008;
-    --cyan:#ff4d4d; --green:#ff8c42; --yellow:#ffcc00; --pink:#ff0033; --orange:#ff5500; --purple:#cc0044;
-    --theme-noise-op:0.02;
-    --theme-overlay:radial-gradient(ellipse at 50% 110%,rgba(200,0,30,.15) 0%,transparent 65%),
-      radial-gradient(ellipse at 80% 0%,rgba(255,0,50,.06) 0%,transparent 40%);
-  }
-  body.theme-blood @keyframes prGlow {
-  0%   { box-shadow: 0 0 0 rgba(105,255,71,0); }
-  30%  { box-shadow: 0 0 24px rgba(105,255,71,0.6), 0 0 48px rgba(105,255,71,0.3); transform: scale(1.02); }
-  60%  { box-shadow: 0 0 12px rgba(105,255,71,0.3); transform: scale(1.01); }
-  100% { box-shadow: 0 0 0 rgba(105,255,71,0); transform: scale(1); }
-}
-.pr-new-glow { animation: prGlow 1.4s ease-out forwards; }
-
-@keyframes fullscreenFadeIn {
-  from { opacity:0; transform:scale(0.96); }
-  to   { opacity:1; transform:scale(1); }
-}
-.chart-fullscreen-modal {
-  position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px; animation:fullscreenFadeIn 0.2s ease-out;
-}
-.chart-fullscreen-modal canvas { max-width:100%; max-height:80vh; }
-
-.card { border-color:rgba(180,0,25,.22)!important; background:rgba(100,0,12,.09)!important; }
-  body.theme-blood .card-title { color:#ff4d4d!important; }
-  body.theme-blood .nav-bar { border-color:rgba(200,0,30,.3)!important; }
-  body.theme-clean {
-    --bg:#f0f0f5; --surface:rgba(0,0,0,.03); --border:rgba(0,0,0,.09);
-    --text:#1a1a2e; --muted:#888; --iron:#e2e2ea;
-    --cyan:#007aff; --green:#34c759; --yellow:#ff9500; --pink:#ff2d55; --orange:#ff6b00; --purple:#af52de;
-    --theme-noise-op:0;
-    --theme-overlay:none;
-  }
-  body.theme-clean @keyframes prGlow {
-  0%   { box-shadow: 0 0 0 rgba(105,255,71,0); }
-  30%  { box-shadow: 0 0 24px rgba(105,255,71,0.6), 0 0 48px rgba(105,255,71,0.3); transform: scale(1.02); }
-  60%  { box-shadow: 0 0 12px rgba(105,255,71,0.3); transform: scale(1.01); }
-  100% { box-shadow: 0 0 0 rgba(105,255,71,0); transform: scale(1); }
-}
-.pr-new-glow { animation: prGlow 1.4s ease-out forwards; }
-
-@keyframes fullscreenFadeIn {
-  from { opacity:0; transform:scale(0.96); }
-  to   { opacity:1; transform:scale(1); }
-}
-.chart-fullscreen-modal {
-  position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px; animation:fullscreenFadeIn 0.2s ease-out;
-}
-.chart-fullscreen-modal canvas { max-width:100%; max-height:80vh; }
-
-.card { background:#fff!important; border-color:rgba(0,0,0,.07)!important; box-shadow:0 1px 6px rgba(0,0,0,.06)!important; }
-  body.theme-clean .nav-bar { background:rgba(255,255,255,.97)!important; border-color:rgba(0,0,0,.1)!important; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden; font-size: 14px; }
 
   /* NOISE TEXTURE */
-  body::after { content:''; position:fixed; inset:0; z-index:0; opacity:var(--theme-noise-op,0.025);
+  body::after { content:''; position:fixed; inset:0; z-index:0; opacity:0.025;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     pointer-events:none; }
   body::before { content: ''; position: fixed; inset: 0; z-index: 0;
@@ -191,26 +72,7 @@
   .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
   /* ── CARDS ── */
-  @keyframes prGlow {
-  0%   { box-shadow: 0 0 0 rgba(105,255,71,0); }
-  30%  { box-shadow: 0 0 24px rgba(105,255,71,0.6), 0 0 48px rgba(105,255,71,0.3); transform: scale(1.02); }
-  60%  { box-shadow: 0 0 12px rgba(105,255,71,0.3); transform: scale(1.01); }
-  100% { box-shadow: 0 0 0 rgba(105,255,71,0); transform: scale(1); }
-}
-.pr-new-glow { animation: prGlow 1.4s ease-out forwards; }
-
-@keyframes fullscreenFadeIn {
-  from { opacity:0; transform:scale(0.96); }
-  to   { opacity:1; transform:scale(1); }
-}
-.chart-fullscreen-modal {
-  position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px; animation:fullscreenFadeIn 0.2s ease-out;
-}
-.chart-fullscreen-modal canvas { max-width:100%; max-height:80vh; }
-
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
   .card-title { font-size: 11px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 16px; display:flex; align-items:center; gap:8px; }
   .card-title-icon { font-size: 14px; }
 
@@ -524,15 +386,14 @@ let currentView = "dashboard";
 let compareStartDate = "", compareEndDate = "";
 
 // ── SETTINGS (persisted to localStorage) ──────────────────
-const DEFAULTS = { showTrueWeight:true, showSpikes:true, showLockedBadges:false, darkMode:true };
+const DEFAULTS = { useKg:false, showTrueWeight:true, showSpikes:true, showLockedBadges:false, darkMode:true };
 let settings = {...DEFAULTS};
 try { const s=localStorage.getItem('prophecy_settings'); if(s) settings={...DEFAULTS,...JSON.parse(s)}; } catch(e){}
 function saveSetting(key, val) {
   settings[key] = val;
   try { localStorage.setItem('prophecy_settings', JSON.stringify(settings)); } catch(e) {}
-  if (key === 'theme') { applyTheme(val); renderAll(); return; }
   // Don't call renderAll — re-render only what changed to avoid destroying toggle DOM state
-  if (key === 'showTrueWeight' || key === 'showSpikes') {
+  if (key === 'showTrueWeight' || key === 'showSpikes' || key === 'useKg') {
     if (currentView === 'dashboard' && activeUserId) {
       const u = users.find(x => x.id === activeUserId);
       if (u && u.entries.length > 1) {
@@ -556,9 +417,9 @@ window.toggleSetting = function(key) {
 };
 
 // ── UNIT HELPERS ──────────────────────────────────────────
-function lbs(v) { return v; }
-function wUnit() { return 'lbs'; }
-function fmtW(v) { if(v===null||v===undefined) return '—'; return `${v} lbs`; }
+function lbs(v) { if(!v && v!==0) return null; return settings.useKg ? parseFloat((v/2.2046).toFixed(1)) : v; }
+function wUnit() { return settings.useKg ? 'kg' : 'lbs'; }
+function fmtW(v) { if(v===null||v===undefined) return '—'; return `${lbs(v)} ${wUnit()}`; }
 
 // ── TRUE WEIGHT (7-day rolling average) ───────────────────
 function calcTrueWeight(entries) {
@@ -579,14 +440,13 @@ function getTrueWeightNow(u) {
 
 // ── WATER SPIKE DETECTION ─────────────────────────────────
 // Water spike = any day-over-day jump > 1.9 lbs (no recovery check needed)
-// Water spike = day-over-day change of ±1 lb or more (up OR down)
 function detectSpikes(entries) {
   if (!entries || entries.length < 2) return new Set();
   const sorted = [...entries].sort((a,b)=>a.date.localeCompare(b.date));
   const spikes = new Set();
   for (let i=1; i<sorted.length; i++) {
     const delta = sorted[i].weight - sorted[i-1].weight;
-    if (Math.abs(delta) >= 1.0) spikes.add(sorted[i].date);
+    if (delta > 1.9) spikes.add(sorted[i].date);
   }
   return spikes;
 }
@@ -595,20 +455,15 @@ function detectSpikes(entries) {
 function calcGoalPrediction(u) {
   if (!u.goalWeight || !u.entries || u.entries.length < 2) return null;
   // Use true weight for rate calculation (smoother)
-  // Use same week-over-week approach as calcRateOfLoss for consistency
-  const rol = calcRateOfLoss(u);
   const tw = calcTrueWeight(u.entries);
-  if (!tw.length) return null;
-  const currentTW = tw[tw.length - 1].weight;
+  if (tw.length < 2) return null;
+  const recent = tw.slice(-4);
+  const days = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 864e5;
+  if (days < 3) return null;
+  const currentTW = recent[recent.length-1].weight;
   const toGoal = currentTW - u.goalWeight;
   if (toGoal <= 0) return { reached: true };
-  // Use week-over-week rate if available, otherwise fall back to long-term trend
-  const weeklyChange = rol ? parseFloat(rol.perWeek) : (() => {
-    if (tw.length < 4) return 0;
-    const oldest = tw[0], newest = tw[tw.length-1];
-    const days = (new Date(newest.date+'T00:00:00') - new Date(oldest.date+'T00:00:00')) / 864e5;
-    return days > 0 ? (oldest.weight - newest.weight) / days * 7 : 0;
-  })();
+  const weeklyChange = (recent[0].weight - recent[recent.length-1].weight) / days * 7;
   if (weeklyChange <= 0) return { gained: true, weeklyChange: weeklyChange.toFixed(2) };
   const weeksNeeded = toGoal / weeklyChange;
   const daysNeeded = Math.round(weeksNeeded * 7);
@@ -619,13 +474,19 @@ function calcGoalPrediction(u) {
   const optDays = Math.round((toGoal / optRate) * 7);
   const optDate = new Date();
   optDate.setDate(optDate.getDate() + optDays);
-  // (Deficit/intake estimates removed — too inaccurate without knowing TDEE)
+  // Calorie deficit estimate (3500 kcal per lb of fat)
+  const deficitPerDay = Math.round((weeklyChange * 3500) / 7);
+  const optDeficit = Math.round((optRate * 3500) / 7);
+  // Estimate TDEE from bodyweight (Mifflin-St Jeor approximation for sedentary male ~35yo)
+  // Then subtract deficit to get estimated intake
+  const estTDEE = Math.round(currentTW * 14.5); // conservative multiplier (lbs × 14-16 = TDEE)
+  const estIntake = Math.max(800, estTDEE - deficitPerDay);
   return {
     reached: false, gained: false,
     currentRate: weeklyChange.toFixed(2),
     daysNeeded, goalDate: goalDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
     optDays, optDate: optDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
-    toGoal: toGoal.toFixed(1),
+    deficitPerDay, estIntake, estTDEE, toGoal: toGoal.toFixed(1),
     currentTW: currentTW.toFixed(1),
   };
 }
@@ -1030,9 +891,7 @@ function renderAthleteDetail(u) {
     ${renderRecompBadge(u)}
     ${renderStreakWidget(u)}
     ${renderPlateauWidget(u)}
-    ${renderPlateauProbability(u)}
     ${goalPredictionWidget(u)}
-    ${renderNaturalWeightRange(u)}
     ${renderTrendConfidence(u)}
     ${sorted.length>1?collapseSection('chart-sec-'+u.id,'<span class="card-title-icon">📈</span>Weight History',renderWeightChart(u),true):''}
     <div class="card">
@@ -1074,10 +933,10 @@ function renderAthleteChart(u) {
   if (!ctx) return;
   const spikes = settings.showSpikes ? detectSpikes(u.entries) : new Set();
   const twData = settings.showTrueWeight ? calcTrueWeight(u.entries) : [];
-  const twMap = {}; twData.forEach(t => { twMap[t.date] = t.weight; });
+  const twMap = {}; twData.forEach(t => { twMap[t.date] = settings.useKg ? lbs(t.weight) : t.weight; });
   const datasets = [{
     label: u.name,
-    data: sorted.map(e => e.weight),
+    data: sorted.map(e => settings.useKg ? lbs(e.weight) : e.weight),
     borderColor: u.color, backgroundColor: u.color+'18', borderWidth:2,
     pointRadius: sorted.map(e => spikes.has(e.date)?7:3),
     pointBackgroundColor: sorted.map(e => spikes.has(e.date)?'#33aaff':u.color),
@@ -1096,7 +955,7 @@ function renderAthleteChart(u) {
       plugins:{legend:{display:settings.showTrueWeight,labels:{color:'#777',font:{family:'DM Mono',size:10},boxWidth:20}}},
       scales:{
         x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#555',font:{family:'DM Mono',size:10}}},
-        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>v+' lbs'}}
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>settings.useKg?v+' kg':v+' lbs'}}
       },
       responsive:true, maintainAspectRatio:true,
     }
@@ -1152,7 +1011,7 @@ function renderCompare() {
       <span class="filter-sep">→ To</span>
       <input type="date" id="filterEnd" value="${compareEndDate}" min="${minDate}" max="${maxDate}"
         style="width:auto;flex:1;min-width:130px;padding:7px 10px;font-size:12px" onchange="updateFilter()">
-      <button class="filter-reset" onclick="window.resetFilter()">Reset</button>
+      <button class="filter-reset" onclick="resetFilter()">Reset</button>
     </div>
 
     ${compareStartDate || compareEndDate ? `
@@ -1328,7 +1187,178 @@ window.resetFilter = function() {
   renderCompare();
 };
 
-// ── BPI CALCULATION ───────────────────────────────────────────
+// ── ADD ENTRY ──────────────────────────────────────────────
+function renderAddEntry() {
+  const u = getActive();
+  const el = document.getElementById("view-add-entry");
+  if (!u) { el.innerHTML=`<div class="card"><div style="color:var(--muted);text-align:center;padding:20px">Select a person first.</div></div>`; return; }
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="card-title-icon">⚖️</span>Log Weight Entry</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <span class="dot" style="background:${u.color}"></span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${u.color};letter-spacing:0.05em">${u.name}</span>
+        ${phaseLabel(u.phase||'cut')}
+      </div>
+      <div class="form-group"><label>Date</label><input type="date" id="e-date" value="${new Date().toISOString().split('T')[0]}"></div>
+      <div class="form-group"><label>Weight (lbs)</label><input type="number" id="e-weight" step="0.1" placeholder="e.g. 215"></div>
+      <div class="form-group"><label>Note (optional)</label><input type="text" id="e-note" placeholder="e.g. Morning, post-cardio"></div>
+      <button class="btn" onclick="submitEntry()">Log Entry</button>
+    </div>`;
+}
+
+window.submitEntry = async function() {
+  const u = getActive(); if(!u) return;
+  const weight = parseFloat(document.getElementById("e-weight").value);
+  const date = document.getElementById("e-date").value;
+  const note = document.getElementById("e-note").value.trim();
+  if (!weight || !date) { alert("Please enter a date and weight."); return; }
+  await saveEntry(u.id, { id:genId(), date, weight, note });
+  showView("dashboard", null);
+};
+
+window.confirmDelEntry = function(userId, entryId, date, weight) {
+  showConfirm("Delete Entry?", `Remove the ${weight} lbs entry from ${fmtDate(date)}?`, async () => {
+    await deleteEntry(userId, entryId);
+  });
+};
+
+// ── ADD USER ───────────────────────────────────────────────
+function renderAddUser() {
+  document.getElementById("view-add-user").innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="card-title-icon">🏋️</span>Add Athlete</div>
+      <div class="form-group"><label>Name</label><input type="text" id="u-name" placeholder="e.g. Big Dave"></div>
+      <div class="form-group"><label>Starting Weight (lbs)</label><input type="number" id="u-start" step="0.1" placeholder="e.g. 245"></div>
+      <div class="form-group"><label>Goal Weight (lbs) — optional</label><input type="number" id="u-goal" step="0.1" placeholder="e.g. 220"></div>
+      <div class="form-group"><label>Height (inches) — optional, for BMI</label><input type="number" id="u-height" placeholder="e.g. 72"></div>
+      <div class="form-group"><label>Body Fat % — optional, for FFMI</label><input type="number" id="u-bf" step="0.1" placeholder="e.g. 12"></div>
+      <div class="form-group"><label>Current Phase</label>
+        <select id="u-phase">
+          <option value="cut">Cut</option>
+          <option value="bulk">Bulk</option>
+          <option value="maintain">Maintain</option>
+        </select>
+      </div>
+      <button class="btn" onclick="submitUser()">Add Athlete</button>
+    </div>`;
+}
+
+window.submitUser = async function() {
+  const name = document.getElementById("u-name").value.trim();
+  const startWeight = parseFloat(document.getElementById("u-start").value);
+  if (!name || !startWeight) { alert("Name and starting weight are required."); return; }
+  const user = {
+    id:genId(), name, startWeight,
+    goalWeight: parseFloat(document.getElementById("u-goal").value)||null,
+    height: parseFloat(document.getElementById("u-height").value)||null,
+    bodyFat: parseFloat(document.getElementById("u-bf").value)||null,
+    phase: document.getElementById("u-phase").value,
+    color: COLORS[users.length % COLORS.length],
+    createdAt: Date.now(),
+  };
+  activeUserId = user.id;
+  await saveNewUser(user);
+  showView("dashboard", null);
+};
+
+// ── EDIT PROFILE ──────────────────────────────────────────
+window.showEditProfile = function(userId) {
+  const u = users.find(x => x.id===userId); if(!u) return;
+  const el = document.getElementById("confirmDialog");
+  el.style.display = "flex";
+  el.innerHTML = `<div class="confirm-dialog"><div class="confirm-box" style="max-width:440px;text-align:left">
+    <h3 style="color:var(--cyan);margin-bottom:18px">Edit Profile</h3>
+    <div class="form-group"><label>Name</label><input type="text" id="ep-name" value="${u.name}"></div>
+    <div class="form-group"><label>Starting Weight (lbs)</label><input type="number" id="ep-start" step="0.1" value="${u.startWeight}"></div>
+    <div class="form-group"><label>Goal Weight (lbs)</label><input type="number" id="ep-goal" step="0.1" value="${u.goalWeight??''}"></div>
+    <div class="form-group"><label>Height (inches)</label><input type="number" id="ep-height" value="${u.height??''}"></div>
+    <div class="form-group"><label>Body Fat % — optional, for FFMI</label><input type="number" id="ep-bf" step="0.1" value="${u.bodyFat??''}"></div>
+    <div class="form-group" style="margin-bottom:24px"><label>Current Phase</label>
+      <select id="ep-phase">
+        <option value="cut" ${u.phase==='cut'?'selected':''}>Cut</option>
+        <option value="bulk" ${u.phase==='bulk'?'selected':''}>Bulk</option>
+        <option value="maintain" ${u.phase==='maintain'?'selected':''}>Maintain</option>
+      </select>
+    </div>
+    <div class="confirm-btns">
+      <button class="btn" id="epSave" style="flex:1">Save Changes</button>
+      <button class="btn btn-danger" id="epCancel" style="flex:1">Cancel</button>
+    </div>
+  </div></div>`;
+  document.getElementById("epCancel").onclick = () => { el.style.display="none"; };
+  document.getElementById("epSave").onclick = async () => {
+    const name = document.getElementById("ep-name").value.trim();
+    const startWeight = parseFloat(document.getElementById("ep-start").value);
+    if (!name || !startWeight) { alert("Name and starting weight are required."); return; }
+    await set(ref(db, `users/${userId}/name`), name);
+    await set(ref(db, `users/${userId}/startWeight`), startWeight);
+    await set(ref(db, `users/${userId}/goalWeight`), parseFloat(document.getElementById("ep-goal").value)||null);
+    await set(ref(db, `users/${userId}/height`), parseFloat(document.getElementById("ep-height").value)||null);
+    await set(ref(db, `users/${userId}/bodyFat`), parseFloat(document.getElementById("ep-bf").value)||null);
+    await set(ref(db, `users/${userId}/phase`), document.getElementById("ep-phase").value);
+    el.style.display="none";
+  };
+};
+
+// ── DELETE ─────────────────────────────────────────────────
+window.confirmDelUser = function(userId, name) {
+  showConfirm(`Remove ${name}?`, `This permanently deletes ${name} and all their data.`, async () => {
+    await deleteUser(userId);
+  });
+};
+
+// ── POWERLIFTING ───────────────────────────────────────────
+const LIFTS = [
+  { key:"squat",   label:"Back Squat",     icon:"🟥", color:"#ff4d8d" },
+  { key:"bench",   label:"Bench Press",    icon:"🟦", color:"#00e5ff" },
+  { key:"deadlift",label:"Deadlift",       icon:"⬛", color:"#ffe040" },
+  { key:"ohp",     label:"Overhead Press", icon:"🟩", color:"#69ff47" },
+];
+
+// Wilks2 (2020 updated formula — IPF standard)
+// Coefficients from: https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/IPF_Technical_Rules_Book_2023.pdf
+function calcWilks(total, bw, isMale=true) {
+  if (!total || !bw) return null;
+  const bwKg = bw / 2.2046226218;
+  const totKg = total / 2.2046226218;
+  // Wilks2 polynomials (6th degree)
+  let a, b, c, d, e, f;
+  if (isMale) {
+    a = -216.0475144; b = 16.2606339; c = -0.002388645;
+    d = -0.00113732; e = 7.01863e-6; f = -1.291e-8;
+  } else {
+    a = 594.31747775582; b = -27.23842536447; c = 0.82112226871;
+    d = -0.00930733913; e = 4.731582e-5; f = -9.054e-8;
+  }
+  const denom = a + b*bwKg + c*bwKg**2 + d*bwKg**3 + e*bwKg**4 + f*bwKg**5;
+  const coeff = 500 / denom;
+  return (coeff * totKg).toFixed(1);
+}
+
+function calcFFMI(weightLbs, heightIn, bodyFatPct) {
+  if (!weightLbs || !heightIn || !bodyFatPct) return null;
+  const weightKg = weightLbs / 2.2046;
+  const heightM  = (heightIn * 2.54) / 100;
+  const leanMass = weightKg * (1 - bodyFatPct / 100);
+  const ffmi = leanMass / (heightM * heightM);
+  const normalised = ffmi + 6.3 * (1.8 - heightM);
+  return { ffmi: ffmi.toFixed(1), norm: normalised.toFixed(1) };
+}
+// Updated FFMI labels — natural cap is ~25, enhanced starts above
+function ffmiLabel(norm) {
+  const n = parseFloat(norm);
+  if (n < 16)  return { label:'Below Average',   color:'#666' };
+  if (n < 18)  return { label:'Average',          color:'#aaa' };
+  if (n < 20)  return { label:'Above Average',    color:'#ff6b2b' };
+  if (n < 22)  return { label:'Excellent',        color:'#ffe040' };
+  if (n < 23)  return { label:'Near Natty Peak',  color:'#69ff47' };
+  if (n < 25)  return { label:'Natural Elite',    color:'#00e5ff' };
+  if (n < 28)  return { label:'Enhanced',         color:'#c77dff' };
+  return               { label:'Enhanced — High', color:'#ff4d8d' };
+}
+// ── BODYBUILDER–POWERLIFTER INDEX (BPI) ───────────────────
+// BPI > 0 → Powerlifter side, BPI < 0 → Bodybuilder side
 function calcBPI(u) {
   const currentW = u.entries.length > 0
     ? [...u.entries].sort((a,b) => b.date.localeCompare(a.date))[0].weight
@@ -1342,18 +1372,24 @@ function calcBPI(u) {
   const ffmiData = calcFFMI(currentW, u.height, u.bodyFat);
   const bmi = u.height ? parseFloat(((currentW / Math.pow(u.height, 2)) * 703).toFixed(1)) : null;
 
+  // Need at least one strength signal OR muscularity signal
   const hasStrength = sqPR || bpPR || dlPR || ohpPR;
   const hasMuscularity = ffmiData && bmi;
   if (!hasStrength && !hasMuscularity) return null;
 
   let normalizedStrength = null;
   if (hasStrength) {
+    // STEP 1: Weighted relative strength index
+    // Weights: squat 35%, deadlift 35%, bench 20%, ohp 10%
     let weightedSum = 0, weightTotal = 0;
     if (sqPR)  { weightedSum += 0.35 * (sqPR.weight  / currentW); weightTotal += 0.35; }
     if (dlPR)  { weightedSum += 0.35 * (dlPR.weight  / currentW); weightTotal += 0.35; }
     if (bpPR)  { weightedSum += 0.20 * (bpPR.weight  / currentW); weightTotal += 0.20; }
     if (ohpPR) { weightedSum += 0.10 * (ohpPR.weight / currentW); weightTotal += 0.10; }
+    // Rescale to full weight so partial data still gives a valid index
     const strengthIndex = weightTotal > 0 ? weightedSum / weightTotal : 0;
+
+    // STEP 2: Normalize — novice ~2.0x BW combined, elite ~6.0x BW combined
     const STRENGTH_MIN = 2.0, STRENGTH_MAX = 6.0;
     normalizedStrength = Math.min(1, Math.max(0,
       (strengthIndex - STRENGTH_MIN) / (STRENGTH_MAX - STRENGTH_MIN)
@@ -1538,54 +1574,6 @@ async function deleteLiftPR(userId, liftKey, entryId) {
 }
 
 // Get sorted PR history for a lift
-// ── POWERLIFTING CONSTANTS ────────────────────────────────
-// Wilks2 (2020 updated formula — IPF standard)
-function calcWilks(total, bw, isMale=true) {
-  if (!total || !bw) return null;
-  const bwKg = bw / 2.2046226218;
-  const totKg = total / 2.2046226218;
-  let a, b, c, d, e, f;
-  if (isMale) {
-    a = -216.0475144; b = 16.2606339; c = -0.002388645;
-    d = -0.00113732; e = 7.01863e-6; f = -1.291e-8;
-  } else {
-    a = 594.31747775582; b = -27.23842536447; c = 0.82112226871;
-    d = -0.00930733913; e = 4.731582e-5; f = -9.054e-8;
-  }
-  const denom = a + b*bwKg + c*bwKg**2 + d*bwKg**3 + e*bwKg**4 + f*bwKg**5;
-  const coeff = 500 / denom;
-  return (coeff * totKg).toFixed(1);
-}
-
-function calcFFMI(weightLbs, heightIn, bodyFatPct) {
-  if (!weightLbs || !heightIn || !bodyFatPct) return null;
-  const weightKg = weightLbs / 2.2046;
-  const heightM  = (heightIn * 2.54) / 100;
-  const leanMass = weightKg * (1 - bodyFatPct / 100);
-  const ffmi = leanMass / (heightM * heightM);
-  const normalised = ffmi + 6.3 * (1.8 - heightM);
-  return { ffmi: ffmi.toFixed(1), norm: normalised.toFixed(1) };
-}
-
-function ffmiLabel(norm) {
-  const n = parseFloat(norm);
-  if (n < 16)  return { label:'Below Average',   color:'#666' };
-  if (n < 18)  return { label:'Average',          color:'#aaa' };
-  if (n < 20)  return { label:'Above Average',    color:'#ff6b2b' };
-  if (n < 22)  return { label:'Excellent',        color:'#ffe040' };
-  if (n < 23)  return { label:'Near Natty Peak',  color:'#69ff47' };
-  if (n < 25)  return { label:'Natural Elite',    color:'#00e5ff' };
-  if (n < 28)  return { label:'Enhanced',         color:'#c77dff' };
-  return               { label:'Enhanced — High', color:'#ff4d8d' };
-}
-
-const LIFTS = [
-  { key:"squat",    label:"Back Squat",     icon:"🟥", color:"#ff4d8d" },
-  { key:"bench",    label:"Bench Press",    icon:"🟦", color:"#00e5ff" },
-  { key:"deadlift", label:"Deadlift",       icon:"⬛", color:"#ffe040" },
-  { key:"ohp",      label:"Overhead Press", icon:"🟩", color:"#69ff47" },
-];
-
 function getLiftHistory(u, liftKey) {
   if (!u.prs || !u.prs[liftKey]) return [];
   const entries = Object.values(u.prs[liftKey]);
@@ -1654,7 +1642,7 @@ function renderLifting() {
             ? (() => {
                 const pct = getStrengthPercentile(lift.key, pr.weight, currentWeight);
                 const lvl = pct !== null ? strengthLabel(pct) : null;
-                const dispW = pr.weight;
+                const dispW = settings.useKg ? lbs(pr.weight) : pr.weight;
                 return `<div class="lift-card-val" style="color:${lift.color}">${dispW}<span class="lift-card-unit">${wUnit()}</span></div>
                <div class="lift-card-date">${fmtDate(pr.date)}</div>
                ${rel ? `<div style="font-size:11px;color:#555;margin-top:3px">${rel}x bodyweight</div>` : ""}
@@ -1841,12 +1829,8 @@ window.showAddPR = function(userId) {
     const date = document.getElementById("pr-date").value;
     const notes = document.getElementById("pr-notes").value.trim();
     if (!weight || !date) { alert("Weight and date are required."); return; }
-    // Check if this is actually a new PR before saving
-    const existingPR = getLiftPR(users.find(x=>x.id===userId), liftKey);
     await saveLiftPR(userId, liftKey, { id:genId(), weight, date, notes });
     el.style.display="none";
-    // Trigger glow if new PR
-    if (!existingPR || weight > existingPR.weight) triggerPRGlow(liftKey);
   };
 };
 
@@ -2044,55 +2028,20 @@ function rateOfGainWidget(u) {
 // Rate of Loss widget (for cut phase)
 function calcRateOfLoss(u) {
   if (!u.entries || u.entries.length < 2) return null;
-  // Rate = this week's true-weight avg  vs  last week's true-weight avg
-  // "True weight" = 7-day rolling average of raw entries
-  const sorted = [...u.entries].sort((a,b) => a.date.localeCompare(b.date));
-  const today = new Date();
-
-  // Build 7-day avg for any date window
-  function avgWeightInWindow(fromDate, toDate) {
-    const inWindow = sorted.filter(e => {
-      const d = new Date(e.date + 'T00:00:00');
-      return d >= fromDate && d <= toDate;
-    });
-    if (!inWindow.length) return null;
-    return inWindow.reduce((s,e) => s + e.weight, 0) / inWindow.length;
-  }
-
-  // This week: last 7 days
-  const thisWeekEnd   = new Date(today);
-  const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - 6);
-  // Last week: 7–14 days ago
-  const lastWeekEnd   = new Date(today); lastWeekEnd.setDate(today.getDate() - 7);
-  const lastWeekStart = new Date(today); lastWeekStart.setDate(today.getDate() - 13);
-
-  const thisWeekAvg = avgWeightInWindow(thisWeekStart, thisWeekEnd);
-  const lastWeekAvg = avgWeightInWindow(lastWeekStart, lastWeekEnd);
-
-  // Fallback: if not enough data in rolling windows, use oldest vs newest true weight
-  if (thisWeekAvg === null || lastWeekAvg === null) {
-    const tw = calcTrueWeight(u.entries);
-    if (tw.length < 4) return null;
-    const oldest = tw[0], newest = tw[tw.length - 1];
-    const days = (new Date(newest.date + 'T00:00:00') - new Date(oldest.date + 'T00:00:00')) / 864e5;
-    if (days < 7) return null;
-    const perWeek = ((oldest.weight - newest.weight) / days) * 7;
-    const curW = newest.weight;
-    return { perWeek: perWeek.toFixed(2), change: (oldest.weight - newest.weight).toFixed(1),
-             days: Math.round(days), thisWeekAvg: newest.weight.toFixed(1),
-             lastWeekAvg: oldest.weight.toFixed(1), usingFallback: true, curW };
-  }
-
-  const perWeek = lastWeekAvg - thisWeekAvg; // positive = losing weight
-  return {
-    perWeek: perWeek.toFixed(2),
-    change: perWeek.toFixed(2),
-    days: 7,
-    thisWeekAvg: thisWeekAvg.toFixed(1),
-    lastWeekAvg: lastWeekAvg.toFixed(1),
-    usingFallback: false,
-    curW: thisWeekAvg,
-  };
+  // Uses TRUE WEIGHT (7-day avg) — but still includes ~1-2 lbs of water weight in total loss
+  // We apply a 15% water retention factor: not all scale loss is fat
+  // Actual fat loss ≈ scale loss × 0.85 (the rest is glycogen/water depletion)
+  const tw = calcTrueWeight(u.entries);
+  if (tw.length < 2) return null;
+  const recent = tw.slice(-4);
+  if (recent.length < 2) return null;
+  const days = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 864e5;
+  if (days < 3) return null;
+  const totalChange = recent[0].weight - recent[recent.length-1].weight; // positive = losing
+  const perWeek = (totalChange / days) * 7;
+  // Estimate fat loss component (85% of scale loss is fat; 15% water/glycogen)
+  const fatLossPerWeek = perWeek * 0.85;
+  return { perWeek: perWeek.toFixed(2), fatPerWeek: fatLossPerWeek.toFixed(2), change: totalChange.toFixed(1), days: Math.round(days), usingTrueWeight: true };
 }
 
 function rateOfLossWidget(u) {
@@ -2100,7 +2049,7 @@ function rateOfLossWidget(u) {
   const rol = calcRateOfLoss(u);
   if (!rol) return "";
   const r = parseFloat(rol.perWeek);
-  const curW = rol.curW || (u.entries.length>0 ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : (u.startWeight||200));
+  const curW = u.entries.length>0 ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : (u.startWeight||200);
   const pctPerWeek = (r / curW * 100);
   const optLow = curW * 0.005;
   const optHigh = curW * 0.010;
@@ -2146,11 +2095,7 @@ function rateOfLossWidget(u) {
       <span style="color:rgba(255,77,141,0.6)">Too fast</span>
     </div>
     <div style="font-size:12px;color:#666;font-style:italic">${advice}</div>
-    <div style="font-size:11px;color:#333;margin-top:6px">
-      ${rol.usingFallback
-        ? `Long-term avg over ${rol.days} days · ${Math.abs(parseFloat(rol.change)).toFixed(1)} lbs total`
-        : `This week avg: <strong style="color:${statusColor}">${rol.thisWeekAvg} lbs</strong> · Last week avg: <strong style="color:#555">${rol.lastWeekAvg} lbs</strong>`}
-    </div>
+    <div style="font-size:11px;color:#333;margin-top:6px">Over ${rol.days} days · ${rol.change>=0?'−':'+'}${Math.abs(parseFloat(rol.change)).toFixed(1)} lbs true weight</div>
   </div>`;
 }
 
@@ -2216,35 +2161,7 @@ window.update1RM = function() {
 async function saveWallPost(post) {
   if (!db) return;
   await set(ref(db, `wall/${post.id}`), post);
-window.shareWeekPost = async function(userId) {
-  const u = users.find(x => x.id === userId);
-  if (!u || !u.entries || u.entries.length < 2) { alert("Need at least 2 weigh-ins to share a weekly summary."); return; }
-  const today = new Date();
-  const weekStart = new Date(today); weekStart.setDate(today.getDate() - 6);
-  const inWeek = u.entries.filter(e => new Date(e.date+'T00:00:00') >= weekStart);
-  const tw = getTrueWeightNow(u);
-  const prevTW = (() => {
-    const lwEnd = new Date(today); lwEnd.setDate(today.getDate()-7);
-    const lwStart = new Date(today); lwStart.setDate(today.getDate()-13);
-    const lw = u.entries.filter(e => { const d=new Date(e.date+'T00:00:00'); return d>=lwStart&&d<=lwEnd; });
-    return lw.length ? lw.reduce((s,e)=>s+e.weight,0)/lw.length : null;
-  })();
-  const delta = tw && prevTW ? prevTW - tw : null;
-  const streak = calcStreak(u);
-  let msg = `📋 Week in Review — ${u.name}\n`;
-  if (tw) msg += `⚖️ True weight: ${tw} lbs${delta !== null ? ` (${delta>=0?'−':'+'}${Math.abs(delta).toFixed(1)} lbs week-over-week)` : ''}\n`;
-  if (inWeek.length) msg += `📅 ${inWeek.length} weigh-in${inWeek.length>1?'s':''} logged\n`;
-  if (streak > 0) msg += `🔥 ${streak}-day check-in streak\n`;
-  const activePRs = LIFTS.filter(l=>getLiftPR(u,l.key));
-  if (activePRs.length) msg += `🏋️ ${activePRs.map(l=>`${l.label}: ${getLiftPR(u,l.key).weight} lbs`).join(' · ')}\n`;
-  msg += `#TheProphecy`;
-  await saveWallPost({ id:genId(), userId, authorName:u.name, text:msg, ts:Date.now(), color:u.color });
-};
-
-window.deleteWallPost = async function(postId) {
-  await deleteWallPost(postId);
-};
-
+}
 async function deleteWallPost(postId) {
   if (!db) return;
   await remove(ref(db, `wall/${postId}`));
@@ -2282,7 +2199,6 @@ function renderWall() {
         <textarea id="wall-msg" placeholder="Say something..." rows="2"
           style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:10px 12px;font-family:'DM Mono',monospace;font-size:13px;outline:none;resize:vertical;min-height:44px"></textarea>
         <button class="btn" style="width:auto;padding:10px 18px;white-space:nowrap" onclick="window.postToWall()">Post 🔥</button>
-        <button class="btn btn-sm btn-ghost" style="white-space:nowrap" onclick="window.shareWeekPost(document.getElementById('wall-author')?.value)">📋 Share Week</button>
       </div>` : `<div style="color:#444;font-size:12px">Add users first to post on the wall.</div>`}
     </div>
 
@@ -2368,12 +2284,23 @@ function goalPredictionWidget(u) {
       </div>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px;background:rgba(255,107,43,0.07);border:1px solid rgba(255,107,43,0.15);border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:rgba(255,107,43,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Est. Daily Deficit</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#ff6b2b;line-height:1">${pred.deficitPerDay}</div>
+        <div style="font-size:11px;color:#555">kcal/day</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.15);border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:rgba(0,229,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Est. Daily Intake</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#00e5ff;line-height:1">${pred.estIntake}</div>
+        <div style="font-size:11px;color:#555">kcal/day</div>
+      </div>
       <div style="flex:1;min-width:120px;background:rgba(199,125,255,0.07);border:1px solid rgba(199,125,255,0.15);border-radius:8px;padding:12px">
         <div style="font-size:10px;color:rgba(199,125,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Still to ${phaseVerb}</div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#c77dff;line-height:1">${pred.toGoal}</div>
         <div style="font-size:11px;color:#555">lbs (true wt)</div>
       </div>
     </div>
+    <div style="font-size:11px;color:#444;margin-top:12px;font-style:italic">⚡ Deficit = weekly loss × 3,500 ÷ 7. Intake = est. TDEE (~${pred.estTDEE} kcal) minus deficit. Actual intake varies.</div>
   </div>`;
 }
 
@@ -2401,16 +2328,13 @@ function renderWeightChart(u) {
           <input type="checkbox" ${settings.showSpikes?'checked':''} onchange="saveSetting('showSpikes',this.checked)" style="width:auto">
           <span>💧 Spikes</span>
         </label>
-        
+        <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:11px;color:#555;text-transform:none;letter-spacing:0;cursor:pointer">
+          <input type="checkbox" ${settings.useKg?'checked':''} onchange="saveSetting('useKg',this.checked)" style="width:auto">
+          kg
+        </label>
       </div>
     </div>
-    <div style="position:relative">
-      <canvas id="chart-${u.id}"></canvas>
-      <button onclick="window.openFullscreenChart('chart-${u.id}','${u.name} — Weight History')"
-        style="position:absolute;top:6px;right:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
-               color:#888;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace"
-        title="Fullscreen">⛶</button>
-    </div>
+    <canvas id="chart-${u.id}"></canvas>
     ${spikes.size > 0 && settings.showSpikes ? `<div style="font-size:11px;color:#3af;margin-top:8px">💧 ${spikes.size} suspected water spike${spikes.size>1?'s':''} detected — highlighted in blue</div>` : ""}
   </div>`;
 }
@@ -2424,171 +2348,13 @@ function mkToggle(key, label, sub) {
     </div>
   </div>`;
 }
-function renderSettings() { return renderSettingsPanel(); }
 function renderSettingsPanel() {
-  const THEME_OPTS = [
-    {key:'original', label:'Original',   bg:'#07070e', accent:'#00e5ff', textCol:'#eee'},
-    {key:'neon',     label:'Neon',        bg:'#020010', accent:'#c77dff', textCol:'#eee'},
-    {key:'military', label:'Military',    bg:'#0a0d06', accent:'#7fb069', textCol:'#c8d4b0'},
-    {key:'blood',    label:'Blood Sport', bg:'#060003', accent:'#ff0033', textCol:'#f5e8e8'},
-    {key:'clean',    label:'Clean',       bg:'#f0f0f5', accent:'#007aff', textCol:'#1a1a2e'},
-  ];
   return `<div class="settings-panel" id="settingsPanel">
-    <div class="card-title" style="margin-bottom:14px"><span class="card-title-icon">⚙️</span>Display Settings</div>
-
-    <!-- THEME PICKER -->
-    <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">App Theme</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${THEME_OPTS.map(t => `
-          <button onclick="saveSetting('theme','${t.key}')"
-            style="padding:7px 13px;border-radius:8px;border:2px solid ${(settings.theme||'original')===t.key ? t.accent : 'rgba(255,255,255,0.1)'};
-                   background:${t.bg};color:${t.textCol};font-family:'DM Mono',monospace;font-size:10px;
-                   cursor:pointer;letter-spacing:0.04em;transition:all 0.15s;
-                   ${(settings.theme||'original')===t.key ? `box-shadow:0 0 10px ${t.accent}55;` : ''}">
-            ${(settings.theme||'original')===t.key ? '✓ ' : ''}${t.label}
-          </button>`).join('')}
-      </div>
-    </div>
-
-    <!-- ATHLETE COLOR PICKER -->
-    ${users.length ? `<div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">Athlete Colors</div>
-      ${users.map(u => `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block;flex-shrink:0"></span>
-          <span style="font-size:12px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}</span>
-          <input type="color" value="${u.color}" onchange="window.saveAthleteColor('${u.id}',this.value)"
-            style="width:38px;height:28px;padding:2px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:transparent;cursor:pointer;flex-shrink:0">
-        </div>`).join('')}
-    </div>` : ''}
-
-    <!-- WEIGH-IN REMINDER -->
-    <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">⏰ Daily Weigh-in Reminder</div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">
-        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px">
-          <input type="checkbox" ${settings.reminderEnabled ? 'checked' : ''} onchange="window.toggleReminder(this.checked)" style="width:auto">
-          <span>Enabled</span>
-        </label>
-        <input type="time" value="${settings.reminderTime || '07:00'}"
-          onchange="window.setReminderTime(this.value)"
-          ${!settings.reminderEnabled ? 'disabled' : ''}
-          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);
-                 padding:4px 8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;
-                 opacity:${settings.reminderEnabled ? 1 : 0.4}">
-        <span style="font-size:10px;color:${settings.reminderEnabled ? '#69ff47' : '#444'}">${settings.reminderEnabled ? '● Active' : '○ Off'}</span>
-      </div>
-      <div style="font-size:10px;color:#333">Requires app installed to home screen (PWA)</div>
-    </div>
-
+    <div class="card-title" style="margin-bottom:12px"><span class="card-title-icon">⚙️</span>Display Settings</div>
+    ${mkToggle('useKg','Use Kilograms','Toggle all weights between lbs and kg')}
     ${mkToggle('showTrueWeight','True Weight Overlay','7-day rolling average dashed line on charts')}
-    ${mkToggle('showSpikes','Water Spike Markers','Blue dots on sudden ±1 lb day-over-day swings')}
+    ${mkToggle('showSpikes','Water Spike Markers','Blue dots on sudden weight jumps that recovered')}
     ${mkToggle('showLockedBadges','Show Locked Badges','Display unearned badges greyed out')}
-  </div>`;
-}
-
-// ── PLATEAU PROBABILITY SCORE ─────────────────────────────
-function calcPlateauProbability(u) {
-  if (!u.entries || u.entries.length < 10) return null;
-  const tw = calcTrueWeight(u.entries);
-  if (tw.length < 10) return null;
-  const recent = tw.slice(-14); // last 14 true-weight points
-  const weights = recent.map(p => p.weight);
-  const mean = weights.reduce((s,v) => s+v, 0) / weights.length;
-  const variance = weights.reduce((s,v) => s + (v-mean)**2, 0) / weights.length;
-  const stdDev = Math.sqrt(variance);
-  // Net change over the window
-  const netChange = recent[0].weight - recent[recent.length-1].weight;
-  const daySpan = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 864e5 || 1;
-  const weeklyRate = (netChange / daySpan) * 7;
-  // Plateau if: low net movement AND high variance relative to movement
-  // Probability = how much of the variance is "noise" vs directional signal
-  const noiseRatio = stdDev / (Math.abs(weeklyRate) + 0.01);
-  // Scale 0-100: noiseRatio > 3 = very likely plateau, < 0.5 = clear trend
-  const raw = Math.min(99, Math.max(1, (noiseRatio - 0.3) / 3.5 * 100));
-  const pct = Math.round(raw);
-  let label, color;
-  if (pct >= 75) { label = 'Plateau'; color = '#ff6b2b'; }
-  else if (pct >= 50) { label = 'Likely stalling'; color = '#ffe040'; }
-  else if (pct >= 30) { label = 'Slight stall'; color = '#c77dff'; }
-  else { label = 'Trending'; color = '#69ff47'; }
-  return { pct, label, color, stdDev: stdDev.toFixed(2), weeklyRate: weeklyRate.toFixed(2), mean: mean.toFixed(1) };
-}
-
-function renderPlateauProbability(u) {
-  const p = calcPlateauProbability(u);
-  if (!p) return '';
-  return `<div class="card" style="margin-bottom:16px;border-color:rgba(255,107,43,0.15)">
-    <div class="card-title"><span class="card-title-icon">📊</span>Plateau Probability
-      <span style="margin-left:auto;font-size:10px;color:#333">last 14 true-weight points</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
-      <div>
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:${p.color};line-height:1">${p.pct}</span>
-        <span style="font-size:16px;color:${p.color}">%</span>
-      </div>
-      <div>
-        <div style="font-size:14px;color:${p.color};margin-bottom:4px">${p.label}</div>
-        <div style="font-size:11px;color:#555">σ ${p.stdDev} lbs variance · ${p.weeklyRate >= 0 ? '−' : '+'}${Math.abs(p.weeklyRate)} lbs/wk trend</div>
-        <div style="font-size:11px;color:#444;margin-top:3px">14-day avg: ${p.mean} lbs</div>
-      </div>
-    </div>
-    <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden">
-      <div style="height:100%;width:${p.pct}%;background:${p.color};border-radius:3px;transition:width 0.6s ease"></div>
-    </div>
-    ${p.pct >= 60 ? `<div style="font-size:11px;color:#555;margin-top:10px;font-style:italic">
-      💡 Plateau breakers: diet break (1–2 weeks at maintenance), recomp phase, refeed day, or increase training stimulus.
-    </div>` : ''}
-  </div>`;
-}
-
-// ── PREDICTED NATURAL WEIGHT RANGE ────────────────────────
-function renderNaturalWeightRange(u) {
-  if (!u.height || !u.bodyFat) return '';
-  const currentW = getTrueWeightNow(u) || (u.entries.length ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : null);
-  if (!currentW) return '';
-  const heightIn = u.height;
-  const heightM = (heightIn * 2.54) / 100;
-  // Natural FFMI ceiling ~25 (normalised). Work backwards to find weight at various BF%
-  // FFMI_norm = (leanMass_kg / heightM²) + 6.3*(1.8 - heightM)
-  // leanMass_kg = (FFMI_norm - 6.3*(1.8-heightM)) * heightM²
-  // weight_lbs = leanMass_kg / (1 - bf%) * 2.2046
-  const ffmiCeil = 25.0;
-  const ffmiAdj = ffmiCeil - 6.3 * (1.8 - heightM);
-  const leanMassKgAtCeil = ffmiAdj * heightM * heightM;
-  const targets = [
-    {bf: 8,  label: 'Competition (8% BF)'},
-    {bf: 12, label: 'Lean (12% BF)'},
-    {bf: 15, label: 'Athletic (15% BF)'},
-    {bf: 20, label: 'Fitness (20% BF)'},
-  ];
-  return `<div class="card" style="margin-bottom:16px;border-color:rgba(0,229,255,0.12)">
-    <div class="card-title"><span class="card-title-icon">🎚</span>Natural Weight Ceiling
-      <span style="margin-left:auto;font-size:10px;color:#333">FFMI ≤ 25 (natural limit)</span>
-    </div>
-    <div style="font-size:11px;color:#555;margin-bottom:12px">At various body fat % targets, your max natural weight at FFMI 25:</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${targets.map(t => {
-        const wKg = leanMassKgAtCeil / (1 - t.bf/100);
-        const wLbs = Math.round(wKg * 2.2046);
-        const diff = wLbs - Math.round(currentW);
-        const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
-        const bar = Math.min(100, Math.max(2, (Math.round(currentW) / wLbs * 100)));
-        return `<div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:11px;color:#777">${t.label}</span>
-            <span style="font-size:12px;font-family:'Bebas Neue',sans-serif;color:#00e5ff">${wLbs} lbs
-              <span style="font-size:10px;color:${diff>0?'#69ff47':'#ff4d8d'}">(${diffStr} from now)</span>
-            </span>
-          </div>
-          <div style="height:5px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${bar}%;background:rgba(0,229,255,0.5);border-radius:3px"></div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="font-size:10px;color:#333;margin-top:12px;font-style:italic">Based on your height (${heightIn}″). Add body fat % in Edit Profile to compare current lean mass.</div>
   </div>`;
 }
 
@@ -2861,32 +2627,6 @@ function renderCharts() {
         }).join('')}
       </div>`;
     }).join('')}
-
-    <!-- WEIGHT × STRENGTH SCATTER: lbs lost vs strength retained -->
-    ${usersWithData.filter(u=>u.entries.length>=5 && (getLiftPR(u,'squat')||getLiftPR(u,'bench')||getLiftPR(u,'deadlift'))).length >= 1 ? `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title"><span class="card-title-icon">📐</span>Bodyweight vs Strength Over Time
-        <span style="margin-left:auto;font-size:11px;color:#555">scale loss vs lift progress — are you keeping your muscle?</span>
-      </div>
-      <canvas id="bwStrengthChart" style="max-height:320px"></canvas>
-    </div>` : ''}
-
-    <!-- WEIGH-IN CONSISTENCY HEATMAP -->
-    ${usersWithData.length ? `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title"><span class="card-title-icon">🗓</span>Weigh-in Consistency — Last 12 Weeks</div>
-      <div id="weighinHeatmap"></div>
-    </div>` : ''}
-
-    <!-- WEEK-OVER-WEEK DELTA TABLE -->
-    ${usersWithData.length >= 2 ? `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title"><span class="card-title-icon">📋</span>Week-over-Week Summary
-        <span style="margin-left:auto;font-size:11px;color:#555">True weight change per week per athlete</span>
-      </div>
-      <div id="wowTable" style="overflow-x:auto"></div>
-    </div>` : ''}
-
   `;
 
   setTimeout(() => {
@@ -2955,164 +2695,12 @@ function renderCharts() {
           plugins:{ legend:{ display:false } },
           scales:{
             x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#555',font:{family:'DM Mono',size:10},maxTicksLimit:8}},
-            y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>v+' lbs'}}
+            y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>settings.useKg?lbs(v)+' kg':v+' lbs'}}
           },
           responsive:true, maintainAspectRatio:true,
         }
       });
     });
-
-    // ── BODYWEIGHT vs STRENGTH CHART ──────────────────────────
-    const bwStrCtx = document.getElementById('bwStrengthChart');
-    if (bwStrCtx) {
-      const eligible = usersWithData.filter(u =>
-        u.entries.length >= 5 && (getLiftPR(u,'squat')||getLiftPR(u,'bench')||getLiftPR(u,'deadlift'))
-      );
-      const datasets = [];
-      eligible.forEach(u => {
-        // Normalised bodyweight: % change from start
-        const sorted = [...u.entries].sort((a,b)=>a.date.localeCompare(b.date));
-        const startW = sorted[0].weight;
-        const bwPoints = sorted.map(e => ({
-          x: e.date, y: parseFloat(((e.weight - startW) / startW * 100).toFixed(2))
-        }));
-        datasets.push({ label: u.name + ' Weight %', data: bwPoints,
-          borderColor: u.color + '99', backgroundColor: 'transparent',
-          tension: 0.35, pointRadius: 2, borderDash: [4,3],
-          parsing: { xAxisKey:'x', yAxisKey:'y' } });
-        // PR dots — each logged PR as a % of first PR for that lift
-        ['squat','bench','deadlift'].forEach(liftKey => {
-          const lift = LIFTS.find(l=>l.key===liftKey);
-          if (!lift || !u.prs?.[liftKey]?.length) return;
-          const prSorted = [...u.prs[liftKey]].sort((a,b)=>a.date.localeCompare(b.date));
-          if (!prSorted.length) return;
-          const firstPR = prSorted[0].weight;
-          const prPoints = prSorted.map(pr => ({
-            x: pr.date, y: parseFloat(((pr.weight - firstPR) / firstPR * 100).toFixed(2))
-          }));
-          datasets.push({ label: u.name + ' ' + lift.label + ' %',
-            data: prPoints, borderColor: lift.color,
-            backgroundColor: lift.color + '88', tension: 0.3,
-            pointRadius: 5, pointStyle: 'circle', showLine: true,
-            parsing: { xAxisKey:'x', yAxisKey:'y' } });
-        });
-      });
-      new Chart(bwStrCtx, { type: 'line',
-        data: { datasets },
-        options: {
-          parsing: false,
-          scales: {
-            x: { type:'category', ticks:{ color:'#555', font:{family:'DM Mono',size:9}, maxTicksLimit:8 },
-                 grid:{ color:'rgba(255,255,255,0.04)' } },
-            y: { title:{ display:true, text:'% change from start', color:'#555', font:{size:10} },
-                 ticks:{ color:'#555', font:{family:'DM Mono',size:10},
-                   callback: v => (v>=0?'+':'')+v+'%' },
-                 grid:{ color:'rgba(255,255,255,0.04)' } }
-          },
-          plugins:{ legend:{ labels:{ color:'#888', font:{family:'DM Mono',size:10}, boxWidth:10 } },
-            tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.parsed.y>=0?'+':'')+ctx.parsed.y+'%' } }
-          },
-          responsive:true, maintainAspectRatio:true,
-        }
-      });
-    }
-
-    // ── WEIGH-IN HEATMAP ──────────────────────────────────────
-    const heatmapEl = document.getElementById('weighinHeatmap');
-    if (heatmapEl && usersWithData.length) {
-      const weeks = 12;
-      const today = new Date();
-      // Build date set for each user
-      const userDateSets = usersWithData.map(u => new Set(u.entries.map(e=>e.date)));
-      // Generate week × day grid
-      let html = '<div style="overflow-x:auto"><table style="border-collapse:separate;border-spacing:3px;width:100%">';
-      // Header row: day labels
-      html += '<tr><td style="font-size:9px;color:#333;min-width:60px"></td>';
-      const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      dayLabels.forEach(d => { html += `<td style="font-size:9px;color:#444;text-align:center;padding:2px">${d}</td>`; });
-      html += '</tr>';
-      // User rows
-      usersWithData.forEach(u => {
-        const dateSet = userDateSets[usersWithData.indexOf(u)];
-        html += `<tr><td style="font-size:10px;color:${u.color};font-family:'Bebas Neue',sans-serif;letter-spacing:0.06em;padding-right:8px;white-space:nowrap">${u.name}</td>`;
-        // Get sunday of 12 weeks ago
-        const startSun = new Date(today);
-        startSun.setDate(today.getDate() - today.getDay() - (weeks-1)*7);
-        for (let w = 0; w < weeks; w++) {
-          for (let d = 0; d < 7; d++) {
-            const cellDate = new Date(startSun);
-            cellDate.setDate(startSun.getDate() + w*7 + d);
-            const dateStr = cellDate.toISOString().split('T')[0];
-            const isFuture = cellDate > today;
-            const logged = dateSet.has(dateStr);
-            const bg = isFuture ? 'rgba(255,255,255,0.02)' : logged ? u.color : 'rgba(255,255,255,0.05)';
-            const border = logged ? u.color+'66' : 'rgba(255,255,255,0.06)';
-            html += `<td title="${dateStr}" style="width:20px;height:20px;background:${bg};border-radius:3px;border:1px solid ${border}"></td>`;
-          }
-        }
-        html += '</tr>';
-      });
-      html += '</table></div>';
-      // Legend
-      html += '<div style="display:flex;gap:16px;margin-top:8px;font-size:10px;color:#444">';
-      html += '<span>□ No entry</span>';
-      usersWithData.forEach(u => { html += `<span style="color:${u.color}">■ ${u.name}</span>`; });
-      html += '</div>';
-      heatmapEl.innerHTML = html;
-    }
-
-    // ── WEEK-OVER-WEEK DELTA TABLE ─────────────────────────────
-    const wowEl = document.getElementById('wowTable');
-    if (wowEl && usersWithData.length >= 2) {
-      const weeks = 8;
-      const today = new Date();
-      // Get last N Sunday-start weeks
-      const weekStarts = [];
-      for (let w = weeks-1; w >= 0; w--) {
-        const sun = new Date(today);
-        sun.setDate(today.getDate() - today.getDay() - w*7);
-        weekStarts.push(sun.toISOString().split('T')[0]);
-      }
-      // For each user, compute true weight avg per week
-      let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>';
-      html += '<th style="text-align:left;font-size:10px;color:#555;padding:6px 10px">Athlete</th>';
-      weekStarts.forEach(ws => {
-        const d = new Date(ws+'T00:00:00');
-        html += `<th style="text-align:center;font-size:9px;color:#444;padding:4px 6px">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</th>`;
-      });
-      html += '</tr></thead><tbody>';
-      usersWithData.forEach(u => {
-        html += `<tr><td style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:${u.color};padding:6px 10px">${u.name}</td>`;
-        let prevAvg = null;
-        weekStarts.forEach(ws => {
-          const d = new Date(ws+'T00:00:00');
-          const nextSun = new Date(d); nextSun.setDate(d.getDate()+7);
-          const inWeek = u.entries.filter(e => {
-            const ed = new Date(e.date+'T00:00:00');
-            return ed >= d && ed < nextSun;
-          });
-          const avg = inWeek.length ? inWeek.reduce((s,e)=>s+e.weight,0)/inWeek.length : null;
-          let cell = '—';
-          let color = '#333';
-          if (avg !== null) {
-            const delta = prevAvg !== null ? avg - prevAvg : null;
-            cell = avg.toFixed(1);
-            if (delta !== null) {
-              const sign = delta < 0 ? '▼' : delta > 0 ? '▲' : '●';
-              const dColor = delta < 0 ? '#69ff47' : delta > 0 ? '#ff4d8d' : '#555';
-              cell += `<div style="font-size:9px;color:${dColor}">${sign} ${Math.abs(delta).toFixed(1)}</div>`;
-              color = '#aaa';
-            }
-            prevAvg = avg;
-          } else { prevAvg = null; }
-          html += `<td style="text-align:center;font-size:11px;color:${color};padding:4px 6px;border-top:1px solid rgba(255,255,255,0.04)">${cell}</td>`;
-        });
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
-      wowEl.innerHTML = html;
-    }
-
   }, 50);
 }
 
@@ -3308,12 +2896,11 @@ function collapseSection(id, title, contentHtml, defaultOpen=true) {
 // ── ALL TIME LOW ─────────────────────────────────────────
 function getAllTimeLow(u) {
   if (!u.entries || u.entries.length === 0) return null;
-  // Use ALL historical entries — ATL is genuinely the lowest ever logged
   const sorted = [...u.entries].sort((a,b) => a.weight - b.weight);
   const atl = sorted[0];
-  // Use 7-day true weight for current comparison so a spike doesn't falsely trigger "near ATL"
+  // Check if current weight is near ATL (within 2 lbs)
   const tw = getTrueWeightNow(u);
-  const curW = tw ?? ([...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight ?? null);
+  const curW = u.entries.sort ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : null;
   const isAtATL = curW !== null && Math.abs(curW - atl.weight) <= 2.0;
   const isNewATL = curW !== null && curW < atl.weight;
   return { weight: atl.weight, date: atl.date, isAtATL, isNewATL, current: curW };
@@ -3388,12 +2975,6 @@ window.submitEntry = async function() {
   await saveEntry(userId, { id:genId(), date, weight, note });
   window.showView("dashboard", {target: document.querySelector('[data-view="dashboard"]')});
 };
-window.confirmDelUser = function(userId, userName) {
-  showConfirm(`Remove ${userName}?`, `This permanently deletes ${userName} and all their data.`, async () => {
-    await deleteUser(userId);
-  });
-};
-
 window.confirmDelEntry = function(userId, entryId, date, weight) {
   showConfirm("Delete Entry?", `Remove the ${weight} lbs entry from ${fmtDate(date)}?`, async () => {
     await deleteEntry(userId, entryId);
@@ -3809,7 +3390,7 @@ function renderIndividualCharts() {
     <div class="card-title"><span style="width:10px;height:10px;background:${u2.color};border-radius:50%;display:inline-block"></span> ${u2.name}
       <span style="margin-left:auto;font-size:11px;color:#555">${u2.entries.length} entries</span>
     </div>
-    <div style="position:relative"><canvas id="split-chart-${u2.id}" style="max-height:240px"></canvas><button onclick="window.openFullscreenChart('split-chart-${u2.id}','${u2.name} — Weight Split')" style="position:absolute;top:6px;right:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#888;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer">⛶</button></div>
+    <canvas id="split-chart-${u2.id}" style="max-height:240px"></canvas>
   </div>`).join('');
 }
 
@@ -3920,188 +3501,45 @@ let trainingListening = false;
 
 // ── MUSCLE GROUP MAP ──────────────────────────────────────────
 const MUSCLE_MAP = {
-  // ── CHEST ──────────────────────────────────────────────────
-  'bench press':['chest','triceps','front delt'],
   'bench':['chest','triceps','front delt'],
   'close grip bench':['triceps','chest'],
   'tempo bench':['chest','triceps'],
-  'incline bench':['chest','front delt','triceps'],
-  'decline bench':['chest','triceps'],
   'incline db':['chest','front delt'],
-  'incline dumbbell':['chest','front delt'],
-  'db press':['chest','triceps','front delt'],
-  'dumbbell press':['chest','triceps','front delt'],
-  'incline press':['chest','front delt','triceps'],
-  'decline press':['chest','triceps'],
-  'cable fly':['chest'],
   'incline cable fly':['chest'],
-  'cable crossover':['chest'],
-  'chest fly':['chest'],
-  'pec dec':['chest','front delt'],
   'chest machine':['chest'],
-  'machine press':['chest','triceps'],
-  'push up':['chest','triceps','front delt'],
-  'pushup':['chest','triceps','front delt'],
-  'dips':['chest','triceps'],
-  'chest dip':['chest','triceps'],
-  // ── BACK — LATS ────────────────────────────────────────────
-  'pull up':['lats','biceps'],
-  'pull-up':['lats','biceps'],
-  'pullup':['lats','biceps'],
-  'chin up':['lats','biceps'],
-  'chin-up':['lats','biceps'],
-  'chinup':['lats','biceps'],
-  'weighted pull':['lats','biceps'],
-  'lat pulldown':['lats','biceps'],
-  'pulldown':['lats','biceps'],
+  'pec dec':['chest','front delt'],
+  'squat':['quads','glutes','core'],
+  'front squat':['quads','core'],
+  'barbell bulgarians':['quads','glutes'],
+  'rdl':['hamstrings','glutes','lower back'],
+  'good morning':['hamstrings','lower back'],
+  'deadlift':['lower back','glutes','hamstrings'],
+  'leg curl':['hamstrings'],
+  'sl lying leg curl':['hamstrings'],
+  'leg extension':['quads'],
+  'sl leg extension':['quads'],
+  'sl leg press':['quads','glutes'],
+  'ohp':['front delt','triceps'],
+  'btn press':['delts','triceps'],
+  'cable lat raise':['side delt'],
+  'face pull':['rear delt','upper back'],
+  'chest support rear delt fly':['rear delt'],
+  'pendlay row':['upper back','biceps'],
+  'db upper back row':['upper back','biceps'],
+  'cable upper back row':['upper back','biceps'],
   'iliac pulldown':['lats'],
   'mag lat pulldown':['lats','biceps'],
   'wide grip weighted pull-ups':['lats','biceps'],
   'db lat pullover':['lats'],
-  'cable pullover':['lats'],
-  'straight arm pulldown':['lats'],
-  'straight-arm':['lats'],
-  // ── BACK — UPPER ───────────────────────────────────────────
-  'barbell row':['upper back','lats','biceps'],
-  'bent over row':['upper back','lats','biceps'],
-  'pendlay row':['upper back','lats','biceps'],
-  'yates row':['upper back','lats','biceps'],
-  'db row':['upper back','lats','biceps'],
-  'dumbbell row':['upper back','lats','biceps'],
-  'db upper back row':['upper back','biceps'],
-  'cable upper back row':['upper back','biceps'],
-  'cable row':['upper back','lats','biceps'],
-  'seated row':['upper back','lats','biceps'],
-  'machine row':['upper back','lats','biceps'],
-  'chest supported row':['upper back','biceps'],
-  'chest support':['upper back','biceps'],
-  'meadows row':['upper back','lats','biceps'],
-  'kroc row':['upper back','lats','biceps'],
-  't-bar row':['upper back','lats','biceps'],
-  'tbar row':['upper back','lats','biceps'],
-  'face pull':['rear delt','upper back'],
-  'chest support rear delt fly':['rear delt','upper back'],
-  'rear delt fly':['rear delt','upper back'],
-  'rear delt':['rear delt','upper back'],
-  'reverse fly':['rear delt','upper back'],
-  'band pull apart':['rear delt','upper back'],
-  // ── SHOULDERS ──────────────────────────────────────────────
-  'ohp':['front delt','side delt','triceps'],
-  'overhead press':['front delt','side delt','triceps'],
-  'military press':['front delt','side delt','triceps'],
-  'btn press':['front delt','side delt','triceps'],
-  'behind the neck':['front delt','side delt','triceps'],
-  'db shoulder press':['front delt','side delt','triceps'],
-  'db ohp':['front delt','side delt','triceps'],
-  'arnold press':['front delt','side delt','triceps'],
-  'seated db press':['front delt','side delt','triceps'],
-  'lateral raise':['side delt'],
-  'lat raise':['side delt'],
-  'cable lat raise':['side delt'],
-  'cable lateral':['side delt'],
-  'db lateral':['side delt'],
-  'machine lateral':['side delt'],
-  'front raise':['front delt'],
-  // ── ARMS — TRICEPS ─────────────────────────────────────────
   'tricep pushdown':['triceps'],
-  'tricep push down':['triceps'],
-  'pushdown':['triceps'],
-  'tricep extension':['triceps'],
-  'skull crusher':['triceps'],
-  'skullcrusher':['triceps'],
-  'jm press':['triceps'],
-  'overhead tricep':['triceps'],
-  'katana':['triceps'],
-  'tricep dip':['triceps'],
-  'cable tricep':['triceps'],
-  // ── ARMS — BICEPS ──────────────────────────────────────────
-  'barbell curl':['biceps'],
-  'bb curl':['biceps'],
-  'ez bar curl':['biceps'],
-  'ez curl':['biceps'],
-  'db curl':['biceps'],
-  'dumbbell curl':['biceps'],
-  'hammer curl':['biceps'],
-  'preacher curl':['biceps'],
+  'katana tricep ext':['triceps'],
   'lean back preacher curl':['biceps'],
-  'incline curl':['biceps'],
   'incline seat hammer curl':['biceps'],
-  'cable curl':['biceps'],
-  'machine curl':['biceps'],
-  'concentration curl':['biceps'],
-  'spider curl':['biceps'],
-  // ── LEGS — QUADS ───────────────────────────────────────────
-  'squat':['quads','glutes','core'],
-  'back squat':['quads','glutes','core'],
-  'front squat':['quads','core'],
-  'hack squat':['quads','glutes'],
-  'leg press':['quads','glutes'],
-  'sl leg press':['quads','glutes'],
-  'single leg press':['quads','glutes'],
-  'leg extension':['quads'],
-  'sl leg extension':['quads'],
-  'single leg extension':['quads'],
-  'split squat':['quads','glutes'],
-  'bulgarian':['quads','glutes'],
-  'barbell bulgarians':['quads','glutes'],
-  'lunge':['quads','glutes'],
-  'walking lunge':['quads','glutes'],
-  'step up':['quads','glutes'],
-  'sissy squat':['quads'],
-  'box squat':['quads','glutes'],
-  'safety bar squat':['quads','glutes'],
-  'ssb squat':['quads','glutes'],
-  // ── LEGS — HAMSTRINGS ──────────────────────────────────────
-  'rdl':['hamstrings','glutes','lower back'],
-  'romanian deadlift':['hamstrings','glutes','lower back'],
-  'stiff leg':['hamstrings','glutes','lower back'],
-  'good morning':['hamstrings','lower back'],
-  'deadlift':['hamstrings','glutes','lower back','traps'],
-  'conventional deadlift':['hamstrings','glutes','lower back','traps'],
-  'sumo deadlift':['hamstrings','glutes','lower back','adductors'],
-  'trap bar deadlift':['hamstrings','glutes','lower back','quads'],
-  'hex bar':['hamstrings','glutes','lower back','quads'],
-  'leg curl':['hamstrings'],
-  'lying leg curl':['hamstrings'],
-  'sl lying leg curl':['hamstrings'],
-  'seated leg curl':['hamstrings'],
-  'nordic curl':['hamstrings'],
-  'glute ham raise':['hamstrings','glutes'],
-  'ghr':['hamstrings','glutes'],
-  // ── GLUTES ─────────────────────────────────────────────────
-  'hip thrust':['glutes','hamstrings'],
-  'barbell hip thrust':['glutes','hamstrings'],
-  'glute bridge':['glutes'],
-  'cable kickback':['glutes'],
-  'abductor':['glutes'],
-  // ── CORE ───────────────────────────────────────────────────
   'hanging leg raise':['core'],
-  'leg raise':['core'],
   'cable ab crunch':['core'],
-  'ab crunch':['core'],
-  'crunch':['core'],
-  'plank':['core'],
   'suitcase hold':['core','obliques'],
-  'pallof press':['core','obliques'],
-  'oblique':['obliques'],
-  'russian twist':['core','obliques'],
-  'ab wheel':['core'],
-  'dragon flag':['core'],
-  // ── TRAPS ──────────────────────────────────────────────────
-  'shrug':['traps'],
-  'kelsey shrug':['traps'],
-  'barbell shrug':['traps'],
-  'db shrug':['traps'],
-  'upright row':['traps','side delt'],
-  'rack pull':['traps','lower back'],
-  // ── CALVES ─────────────────────────────────────────────────
-  'calf raise':['calves'],
-  'standing calf':['calves'],
-  'seated calf':['calves'],
-  // ── ADDUCTORS ──────────────────────────────────────────────
   'adductor':['adductors'],
-  'adduction':['adductors'],
-  'copenhagen':['adductors'],
+  'kelsey shrug':['traps'],
 };
 
 function getMuscles(exerciseName) {
@@ -4325,54 +3763,6 @@ function getAllExercises(userId) {
 }
 
 // ── WEEKLY VOLUME PER MUSCLE ──────────────────────────────────
-// ── TONNAGE HELPERS ──────────────────────────────────────────
-function calcSessionTonnage(session) {
-  // Tonnage = sum of (weight × reps) for every set
-  let total = 0;
-  (session.exercises || []).forEach(ex => {
-    (ex.sets || []).forEach(st => {
-      if (st.weight && st.reps) total += st.weight * st.reps;
-    });
-  });
-  return total;
-}
-
-function getWeeklyTonnage(userId) {
-  const sessions = getUserSessions(userId);
-  const weeks = {};
-  sessions.forEach(s => {
-    const d = new Date(s.date + 'T00:00:00');
-    const weekStart = new Date(d);
-    weekStart.setDate(d.getDate() - d.getDay());
-    const wk = weekStart.toISOString().split('T')[0];
-    weeks[wk] = (weeks[wk] || 0) + calcSessionTonnage(s);
-  });
-  return weeks;
-}
-
-function getExerciseTonnage(userId) {
-  // Returns { exerciseName: { total, sessions, avgPerSession, peakSession, trend: [...] } }
-  const sessions = getUserSessions(userId);
-  const exMap = {};
-  sessions.forEach(s => {
-    (s.exercises || []).forEach(ex => {
-      if (!ex.name) return;
-      const name = ex.name;
-      const t = (ex.sets||[]).reduce((acc, st) => acc + (st.weight&&st.reps ? st.weight*st.reps : 0), 0);
-      if (!exMap[name]) exMap[name] = { total:0, sessions:0, peak:0, peakDate:'', trend:[] };
-      exMap[name].total += t;
-      exMap[name].sessions += 1;
-      if (t > exMap[name].peak) { exMap[name].peak = t; exMap[name].peakDate = s.date; }
-      exMap[name].trend.push({ date: s.date, tonnage: t });
-    });
-  });
-  Object.values(exMap).forEach(v => {
-    v.avgPerSession = v.sessions > 0 ? Math.round(v.total / v.sessions) : 0;
-    v.trend.sort((a,b) => a.date.localeCompare(b.date));
-  });
-  return exMap;
-}
-
 function getWeeklyVolume(userId) {
   const sessions = getUserSessions(userId);
   const today = new Date();
@@ -4400,169 +3790,10 @@ let trainingSubTab = 'log';       // 'log' | 'exercises' | 'volume' | 'import'
 let selectedExercise = null;      // exercise name for drill-down
 let editingSessionId = null;      // session being edited
 let exRangeWeeks = 0;             // 0 = all time, otherwise # of weeks
-let volRangeWeeks = 8;            // weeks to show in volume tab
 
 window.setTrainingTab = function(tab) { trainingSubTab = tab; selectedExercise = null; renderTraining(); };
 window.selectExercise = function(name) { selectedExercise = name; trainingSubTab = 'exercises'; renderTraining(); };
 window.setExRange = function(weeks) { exRangeWeeks = parseInt(weeks); renderTraining(); };
-window.setVolRange = function(weeks) { volRangeWeeks = parseInt(weeks); renderTraining(); };
-
-// ── ATHLETE COLOR PICKER ───────────────────────────────────
-window.saveAthleteColor = async function(userId, color) {
-  if (!db) return;
-  await set(ref(db, `users/${userId}/color`), color);
-  const u = users.find(x => x.id === userId);
-  if (u) u.color = color;
-  renderAll();
-};
-
-// ── WEIGH-IN REMINDER ─────────────────────────────────────
-window.toggleReminder = async function(enabled) {
-  if (enabled && 'Notification' in window) {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') {
-      alert('Notification permission denied. Enable in browser/OS settings, then try again.');
-      return;
-    }
-  }
-  saveSetting('reminderEnabled', enabled);
-  if (navigator.serviceWorker?.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SCHEDULE_REMINDER', enabled, time: settings.reminderTime || '07:00'
-    });
-  }
-  // Re-render settings panel in place
-  const sp = document.getElementById('settingsPanel');
-  if (sp) {
-    const dummy = document.createElement('div');
-    dummy.innerHTML = renderSettings();
-    sp.replaceWith(dummy.firstElementChild);
-  }
-};
-window.setReminderTime = function(t) {
-  saveSetting('reminderTime', t);
-  if (settings.reminderEnabled && navigator.serviceWorker?.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SCHEDULE_REMINDER', enabled: true, time: t
-    });
-  }
-};
-
-// ── FULLSCREEN CHART ──────────────────────────────────────
-window.openFullscreenChart = function(canvasId, title) {
-  const src = document.getElementById(canvasId);
-  if (!src) return;
-  const srcChart = Chart.getChart(src);
-  const modal = document.createElement('div');
-  modal.className = 'chart-fullscreen-modal';
-  modal.onclick = (e) => { if(e.target===modal) modal.remove(); };
-  modal.innerHTML = `
-    <div style="width:100%;max-width:900px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.06em">${title}</div>
-        <button onclick="this.closest('.chart-fullscreen-modal').remove()"
-          style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace">✕ Close</button>
-      </div>
-      <canvas id="fullscreen-canvas-${canvasId}" style="width:100%;max-height:75vh"></canvas>
-    </div>`;
-  document.body.appendChild(modal);
-  // Clone chart config into fullscreen canvas
-  if (srcChart) {
-    const cfg = srcChart.config;
-    new Chart(document.getElementById('fullscreen-canvas-'+canvasId), {
-      type: cfg.type, data: JSON.parse(JSON.stringify(cfg.data)),
-      options: { ...JSON.parse(JSON.stringify(cfg.options||{})), responsive:true, maintainAspectRatio:false }
-    });
-  }
-};
-
-// ── PR GLOW EFFECT ────────────────────────────────────────
-function triggerPRGlow(liftKey) {
-  // Called after a new PR is saved — find the lift card and animate it
-  setTimeout(() => {
-    const cards = document.querySelectorAll('.lift-card');
-    cards.forEach(card => {
-      const label = card.querySelector('.lift-card-label');
-      if (label && label.textContent.toLowerCase().includes(liftKey.toLowerCase())) {
-        card.classList.remove('pr-new-glow');
-        void card.offsetWidth; // reflow
-        card.classList.add('pr-new-glow');
-      }
-    });
-  }, 300);
-}
-
-// ── SHAREABLE PROGRESS CARD ───────────────────────────────
-window.openShareCard = function(userId) {
-  const u = users.find(x => x.id === userId); if (!u) return;
-  const atl = getAllTimeLow(u);
-  const tw = getTrueWeightNow(u);
-  const progress = calcProgress(u);
-  const streak = calcStreak(u);
-  const lifts = LIFTS.map(l => ({ l, pr: getLiftPR(u, l.key) })).filter(x=>x.pr);
-  const weeklyRol = calcRateOfLoss(u);
-
-  const modal = document.createElement('div');
-  modal.className = 'chart-fullscreen-modal';
-  modal.onclick = (e) => { if(e.target===modal) modal.remove(); };
-
-  const startW = u.startWeight || (u.entries.length ? [...u.entries].sort((a,b)=>a.date.localeCompare(b.date))[0].weight : null);
-  const lost = startW && tw ? (startW - tw).toFixed(1) : null;
-  const pctDone = progress && progress.pct > 0 ? progress.pct.toFixed(0) : null;
-
-  modal.innerHTML = `
-    <div id="shareCardContent" style="background:var(--bg);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px;width:100%;max-width:420px;position:relative">
-      <!-- Header -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08)">
-        <div style="width:12px;height:48px;background:${u.color};border-radius:3px"></div>
-        <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:${u.color};letter-spacing:0.06em">${u.name}</div>
-          <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase">The Prophecy · Progress Report</div>
-        </div>
-        <div style="margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#333">${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
-      </div>
-      <!-- Weight stats -->
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-        ${tw ? `<div style="flex:1;min-width:100px;text-align:center">
-          <div style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">True Weight</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:${u.color}">${tw}</div>
-          <div style="font-size:10px;color:#555">lbs</div>
-        </div>` : ''}
-        ${lost ? `<div style="flex:1;min-width:100px;text-align:center">
-          <div style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Total Lost</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:${parseFloat(lost)>0?'#69ff47':'#ff4d8d'}">${parseFloat(lost)>0?lost:'+'+Math.abs(lost)}</div>
-          <div style="font-size:10px;color:#555">lbs</div>
-        </div>` : ''}
-        ${atl ? `<div style="flex:1;min-width:100px;text-align:center">
-          <div style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">All-Time Low</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#00e5ff">${atl.weight}</div>
-          <div style="font-size:10px;color:#555">lbs · ${fmtDate(atl.date)}</div>
-        </div>` : ''}
-      </div>
-      <!-- Stats row -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        ${streak > 0 ? `<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:#ffe040">🔥 ${streak} day streak</span></div>` : ''}
-        ${pctDone ? `<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:#c77dff">🎯 ${pctDone}% to goal</span></div>` : ''}
-        ${weeklyRol && parseFloat(weeklyRol.perWeek) > 0 ? `<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:#69ff47">📉 ${weeklyRol.perWeek} lbs/wk</span></div>` : ''}
-        <div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:#555">${u.entries.length} weigh-ins</span></div>
-      </div>
-      <!-- PRs -->
-      ${lifts.length ? `<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;margin-top:4px">
-        <div style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Personal Records</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${lifts.map(({l,pr}) => `<div style="flex:1;min-width:80px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid ${l.color}22;border-radius:6px;padding:8px">
-            <div style="font-size:9px;color:${l.color};margin-bottom:3px">${l.label}</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${l.color}">${pr.weight}</div>
-            <div style="font-size:9px;color:#444">lbs</div>
-          </div>`).join('')}
-        </div>
-      </div>` : ''}
-      <div style="margin-top:16px;font-size:9px;color:#2a2a3a;text-align:right;letter-spacing:0.08em">THE PROPHECY</div>
-    </div>
-    <div style="margin-top:14px;font-size:11px;color:#444">Screenshot to share · tap outside to close</div>
-  `;
-  document.body.appendChild(modal);
-};
 
 // ── RENDER TRAINING TAB ───────────────────────────────────────
 function renderTraining() {
@@ -4595,9 +3826,7 @@ function renderTraining() {
         <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.05em;line-height:1">${u.name} — Training</div>
         <div style="font-size:10px;color:var(--muted);margin-top:2px">${sessions.length} sessions logged</div>
       </div>
-      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-sm btn-ghost" onclick="window.showSplitTemplates('${u.id}')">📋 Templates</button>
-        ${sessions.length ? `<button class="btn btn-sm btn-ghost" onclick="window.copyLastSession('${u.id}')">⧉ Copy Last</button>` : ''}
+      <div style="margin-left:auto;display:flex;gap:8px">
         <button class="btn btn-sm btn-ghost" onclick="window.showAddSession('${u.id}')">+ New Session</button>
       </div>
     </div>
@@ -4669,7 +3898,7 @@ function renderSessionCard(u, s) {
           <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${u.color}">${s.label || 'Session'}</span>
           <span style="font-size:10px;color:#444;background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:3px">Day ${s.cycle||'?'}</span>
         </div>
-        <div style="font-size:11px;color:#555;margin-bottom:10px">${fmtDate(s.date)} · ${totalSets} sets · ${totalVol ? `<span style="color:#c77dff">${totalVol>=1000?(totalVol/1000).toFixed(1)+'k':totalVol} lbs tonnage</span>` : ''}</div>
+        <div style="font-size:11px;color:#555;margin-bottom:10px">${fmtDate(s.date)} · ${totalSets} sets · ${totalVol ? Math.round(totalVol/1000)+'k lbs volume' : ''}</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
           ${exNames.slice(0,6).map(n => `<span style="font-size:10px;color:#555;background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:3px;cursor:pointer"
             onclick="window.selectExercise('${n.replace(/'/g,"\\'")}')">
@@ -5032,6 +4261,7 @@ function renderVolumeTab(u) {
   const allWeeks = Object.keys(weeklyVol).sort();
   if (!allWeeks.length) return `<div style="color:#444;text-align:center;padding:40px">No data yet. Log some sessions first.</div>`;
 
+  const volRangeWeeks = parseInt(document.getElementById('vol-range')?.value || 8);
   const weeks = allWeeks.slice(-volRangeWeeks);
 
   // Most recent week with data (may not be current calendar week)
@@ -5048,8 +4278,9 @@ function renderVolumeTab(u) {
       <span style="font-size:10px;color:#555;letter-spacing:0.12em;text-transform:uppercase">History window</span>
       <div style="display:flex;gap:4px">
         ${rangeOptions.map(([w,l]) => `<button class="chart-mode-btn ${volRangeWeeks===w?'active':''}"
-          onclick="window.setVolRange(${w})" style="font-size:10px;padding:4px 10px">${l}</button>`).join('')}
+          onclick="document.getElementById('vol-range').value=${w};renderTraining()" style="font-size:10px;padding:4px 10px">${l}</button>`).join('')}
       </div>
+      <input type="hidden" id="vol-range" value="${volRangeWeeks}">
       <span style="font-size:10px;color:#444;margin-left:4px">Most recent: week of ${fmtDate(latestWeek)}</span>
     </div>
 
@@ -5090,100 +4321,6 @@ function renderVolumeTab(u) {
       <canvas id="volume-chart" style="max-height:320px"></canvas>
     </div>
 
-    <!-- TONNAGE OVERVIEW CARDS -->
-    ${(() => {
-      const weeklyTon = getWeeklyTonnage(u.id);
-      const tonWeeks = Object.keys(weeklyTon).sort().slice(-volRangeWeeks);
-      const sessions = getUserSessions(u.id).filter(s => {
-        const wk = (() => { const d=new Date(s.date+'T00:00:00'); const ws=new Date(d); ws.setDate(d.getDate()-d.getDay()); return ws.toISOString().split('T')[0]; })();
-        return tonWeeks.includes(wk);
-      }).sort((a,b)=>b.date.localeCompare(a.date));
-      const exTon = getExerciseTonnage(u.id);
-      const totalTon = tonWeeks.reduce((s,w)=>s+(weeklyTon[w]||0),0);
-      const peakWeek = tonWeeks.reduce((best,w)=>weeklyTon[w]>weeklyTon[best]?w:best, tonWeeks[0]||'');
-      const avgWeekly = tonWeeks.length ? Math.round(totalTon/tonWeeks.length) : 0;
-      const topExercises = Object.entries(exTon)
-        .filter(([,v])=>v.total>0)
-        .sort(([,a],[,b])=>b.total-a.total).slice(0,5);
-      // Sessions sorted by tonnage
-      const sessionsByTon = sessions.map(s=>({...s, ton: calcSessionTonnage(s)})).filter(s=>s.ton>0).sort((a,b)=>b.ton-a.ton).slice(0,5);
-      const maxTon = Math.max(...tonWeeks.map(w=>weeklyTon[w]||0), 1);
-
-      return `
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title"><span class="card-title-icon">🏋️</span>Training Tonnage
-          <span style="margin-left:auto;font-size:11px;color:#555">weight × reps across all sets</span>
-        </div>
-        <!-- Headline stats -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-          <div style="flex:1;min-width:110px;background:rgba(199,125,255,0.07);border:1px solid rgba(199,125,255,0.2);border-radius:8px;padding:14px">
-            <div style="font-size:9px;color:rgba(199,125,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Period Total</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#c77dff;line-height:1">${(totalTon/1000).toFixed(1)}<span style="font-size:13px;opacity:0.6"> k lbs</span></div>
-          </div>
-          <div style="flex:1;min-width:110px;background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:14px">
-            <div style="font-size:9px;color:rgba(0,229,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Avg / Week</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#00e5ff;line-height:1">${(avgWeekly/1000).toFixed(1)}<span style="font-size:13px;opacity:0.6"> k lbs</span></div>
-          </div>
-          <div style="flex:1;min-width:110px;background:rgba(105,255,71,0.07);border:1px solid rgba(105,255,71,0.2);border-radius:8px;padding:14px">
-            <div style="font-size:9px;color:rgba(105,255,71,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Peak Week</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#69ff47;line-height:1">${((weeklyTon[peakWeek]||0)/1000).toFixed(1)}<span style="font-size:13px;opacity:0.6"> k</span></div>
-            <div style="font-size:10px;color:#444;margin-top:2px">${fmtDate(peakWeek)}</div>
-          </div>
-        </div>
-
-        <!-- Weekly tonnage sparkbar -->
-        <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Weekly Tonnage Trend</div>
-        <div style="display:flex;align-items:flex-end;gap:3px;height:60px;margin-bottom:14px">
-          ${tonWeeks.map(w => {
-            const t = weeklyTon[w]||0;
-            const h = Math.max(4, Math.round((t/maxTon)*56));
-            const isPeak = w===peakWeek;
-            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-              <div style="width:100%;height:${h}px;background:${isPeak?'#c77dff':'rgba(199,125,255,0.4)'};border-radius:2px 2px 0 0;transition:height 0.3s" title="${fmtDate(w)}: ${(t/1000).toFixed(1)}k lbs"></div>
-            </div>`;
-          }).join('')}
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:#333;margin-top:-8px;margin-bottom:16px">
-          <span>${fmtDate(tonWeeks[0]||'')}</span><span>${fmtDate(tonWeeks[tonWeeks.length-1]||'')}</span>
-        </div>
-
-        <!-- Top exercises by tonnage -->
-        ${topExercises.length ? `
-        <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Top Exercises by Tonnage</div>
-        ${topExercises.map(([name, v], i) => {
-          const barW = (v.total / (topExercises[0][1].total||1) * 100).toFixed(0);
-          const col = ['#c77dff','#00e5ff','#69ff47','#ffe040','#ff6b2b'][i] || '#888';
-          return `<div style="margin-bottom:8px">
-            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-              <span style="color:${col}">${name}</span>
-              <span style="color:#555">${(v.total/1000).toFixed(1)}k lbs · ${v.sessions} sessions · avg ${(v.avgPerSession/1000).toFixed(1)}k</span>
-            </div>
-            <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden">
-              <div style="height:100%;width:${barW}%;background:${col};border-radius:3px"></div>
-            </div>
-          </div>`;
-        }).join('')}` : ''}
-
-        <!-- Heaviest sessions -->
-        ${sessionsByTon.length ? `
-        <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin:14px 0 8px">Heaviest Sessions</div>
-        ${sessionsByTon.map((s,i) => {
-          const medal = ['🥇','🥈','🥉','',''][i]||'';
-          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
-            <span style="font-size:14px;min-width:20px">${medal}</span>
-            <div style="flex:1">
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:${u.color}">${s.label||'Session'}</div>
-              <div style="font-size:10px;color:#444">${fmtDate(s.date)} · Day ${s.cycle||'?'}</div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#c77dff">${(s.ton/1000).toFixed(1)}k</div>
-              <div style="font-size:9px;color:#444">lbs</div>
-            </div>
-          </div>`;
-        }).join('')}` : ''}
-      </div>`;
-    })()}
-
     <!-- FREQUENCY TABLE -->
     <div class="card">
       <div class="card-title"><span class="card-title-icon">📅</span>Muscle Frequency Grid
@@ -5211,63 +4348,6 @@ function renderVolumeTab(u) {
         </table>
       </div>
     </div>
-
-    <!-- LIFT FREQUENCY HEATMAP -->
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title"><span class="card-title-icon">📅</span>Lift Frequency — Last 12 Weeks
-        <span style="margin-left:auto;font-size:10px;color:#333">sessions containing each lift</span>
-      </div>
-      ${(() => {
-        const weeks = 12;
-        const today = new Date();
-        // Get all unique exercises from sessions in range
-        const rangeStart = new Date(today); rangeStart.setDate(today.getDate() - weeks*7);
-        const recentSessions = sessions.filter(s => new Date(s.date+'T00:00:00') >= rangeStart);
-        // Count per exercise per week
-        const exCounts = {};
-        recentSessions.forEach(sess => {
-          const wk = new Date(sess.date+'T00:00:00');
-          const monday = new Date(wk); monday.setDate(wk.getDate() - wk.getDay() + (wk.getDay()===0?-6:1));
-          const wkKey = monday.toISOString().split('T')[0];
-          (sess.sets||[]).forEach(set => {
-            const ex = set.exercise||'Unknown';
-            if (!exCounts[ex]) exCounts[ex] = {};
-            exCounts[ex][wkKey] = (exCounts[ex][wkKey]||0) + 1;
-          });
-        });
-        // Top 8 most frequent exercises
-        const topEx = Object.entries(exCounts)
-          .map(([ex,wks]) => ({ex, total: Object.values(wks).reduce((s,v)=>s+v,0), wks}))
-          .sort((a,b) => b.total - a.total).slice(0,8);
-        if (!topEx.length) return '<div style="font-size:12px;color:#444;padding:12px 0">No exercise data yet.</div>';
-        // Build week labels
-        const wkLabels = [];
-        for (let w=weeks-1; w>=0; w--) {
-          const d = new Date(today); d.setDate(today.getDate() - d.getDay() + (d.getDay()===0?-6:1) - w*7);
-          wkLabels.push(d.toISOString().split('T')[0]);
-        }
-        const maxCount = Math.max(...topEx.flatMap(e=>Object.values(e.wks)));
-        let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:2px">';
-        html += '<tr><th style="text-align:left;font-size:9px;color:#444;padding:2px 8px 2px 0;white-space:nowrap">Exercise</th>';
-        wkLabels.forEach(wk => {
-          const d = new Date(wk+'T00:00:00');
-          html += `<th style="font-size:8px;color:#333;text-align:center;padding:2px;white-space:nowrap">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</th>`;
-        });
-        html += '<th style="font-size:9px;color:#444;padding:2px 0 2px 6px">Total</th></tr>';
-        topEx.forEach(({ex, total, wks}) => {
-          html += `<tr><td style="font-size:10px;color:#aaa;padding:3px 8px 3px 0;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis">${ex}</td>`;
-          wkLabels.forEach(wk => {
-            const c = wks[wk]||0;
-            const intensity = c ? Math.min(1, c/maxCount) : 0;
-            const bg = c ? \`rgba(105,255,71,\${0.15+intensity*0.7})\` : 'rgba(255,255,255,0.03)';
-            html += \`<td style="width:22px;height:22px;background:\${bg};border-radius:3px;text-align:center;font-size:9px;color:\${c?'#69ff47':'#222'}">\${c||''}</td>\`;
-          });
-          html += \`<td style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#69ff47;padding-left:8px">\${total}</td></tr>\`;
-        });
-        html += '</table></div>';
-        return html;
-      })()}
-    </div>
   `;
 }
 
@@ -5276,6 +4356,7 @@ function mountVolumeChart(userId) {
   if (!ctx) return;
   const ch = Chart.getChart(ctx); if (ch) ch.destroy();
   const weeklyVol = getWeeklyVolume(userId);
+  const volRangeWeeks = parseInt(document.getElementById('vol-range')?.value || 8);
   const weeks = Object.keys(weeklyVol).sort().slice(-volRangeWeeks);
   if (!weeks.length) return;
   const muscles = [...new Set(Object.values(weeklyVol).flatMap(w => Object.keys(w)))].sort();
@@ -5413,128 +4494,6 @@ window.confirmImport = async function(userId) {
 };
 
 // ── ADD SESSION MODAL ─────────────────────────────────────────
-// ── COPY LAST SESSION ─────────────────────────────────────
-window.copyLastSession = function(userId) {
-  const u = users.find(x => x.id === userId);
-  const sessions = trainingData[userId] || [];
-  if (!sessions.length) return;
-  const last = [...sessions].sort((a,b) => b.date.localeCompare(a.date))[0];
-  const el = document.getElementById('confirmDialog');
-  el.style.display = 'flex';
-  const today = new Date().toISOString().split('T')[0];
-  el.innerHTML = `<div class="confirm-dialog"><div class="confirm-box" style="max-width:420px;text-align:left">
-    <h3 style="color:var(--yellow);margin-bottom:16px">⧉ Copy Last Session</h3>
-    <div style="font-size:12px;color:#777;margin-bottom:14px">Copying: <strong style="color:var(--text)">${last.label || last.date}</strong></div>
-    <div class="form-group"><label>New Date</label>
-      <input type="date" id="copy-date" value="${today}">
-    </div>
-    <div class="form-group"><label>New Label (optional)</label>
-      <input type="text" id="copy-label" placeholder="${last.label || ''}" value="${last.label || ''}">
-    </div>
-    <div class="confirm-btns">
-      <button class="btn" onclick="window._doCopySession('${userId}','${last.id}')">Copy Session</button>
-      <button class="btn btn-danger" onclick="document.getElementById('confirmDialog').style.display='none'">Cancel</button>
-    </div>
-  </div></div>`;
-};
-
-window._doCopySession = async function(userId, srcId) {
-  const sessions = trainingData[userId] || [];
-  const src = sessions.find(s => s.id === srcId);
-  if (!src || !db) return;
-  const date = document.getElementById('copy-date')?.value || new Date().toISOString().split('T')[0];
-  const label = document.getElementById('copy-label')?.value?.trim() || src.label;
-  const newId = genId();
-  const newSession = { ...src, id: newId, date, label,
-    sets: src.sets ? src.sets.map(s => ({...s, id: genId(), reps: s.reps, weight: s.weight})) : [] };
-  await set(ref(db, `training/${userId}/${newId}`), newSession);
-  document.getElementById('confirmDialog').style.display = 'none';
-};
-
-// ── SPLIT TEMPLATE LIBRARY ────────────────────────────────
-const BUILT_IN_TEMPLATES = [
-  { name:'Push / Pull / Legs', days:['Push','Pull','Legs','Push','Pull','Legs','Rest'] },
-  { name:'Upper / Lower (4-day)', days:['Upper','Lower','Rest','Upper','Lower','Rest','Rest'] },
-  { name:'5/3/1 (4-day)', days:['Squat','Bench','Deadlift','OHP','Rest','Rest','Rest'] },
-  { name:'Powerlifting Block A', days:['Squat+Bench','Deadlift','Bench+Accessories','Squat+Deadlift','Rest','Rest','Rest'] },
-  { name:'Powerlifting Block B', days:['Heavy Squat','Heavy Bench','Rest','Heavy Deadlift','Volume Bench','Rest','Rest'] },
-  { name:'Bro Split (5-day)', days:['Chest','Back','Shoulders','Arms','Legs','Rest','Rest'] },
-  { name:'Full Body (3-day)', days:['Full Body A','Rest','Full Body B','Rest','Full Body C','Rest','Rest'] },
-];
-
-window.showSplitTemplates = function(userId) {
-  const el = document.getElementById('confirmDialog');
-  el.style.display = 'flex';
-  // Load saved custom templates from settings
-  const saved = settings.customTemplates || [];
-  const all = [...BUILT_IN_TEMPLATES, ...saved];
-  el.innerHTML = `<div class="confirm-dialog"><div class="confirm-box" style="max-width:560px;text-align:left;max-height:90vh;overflow-y:auto">
-    <h3 style="color:var(--yellow);margin-bottom:6px">📋 Training Split Templates</h3>
-    <div style="font-size:11px;color:#555;margin-bottom:16px">Tap a template to log your next session from that split.</div>
-
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-      ${all.map((t,i) => `
-        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--yellow);flex:1">${t.name}</span>
-            ${i >= BUILT_IN_TEMPLATES.length ? `<button onclick="window._deleteTemplate(${i - BUILT_IN_TEMPLATES.length})" style="background:none;border:none;color:#444;cursor:pointer;font-size:12px">✕</button>` : ''}
-          </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
-            ${t.days.map(d => `<span style="font-size:9px;padding:3px 7px;background:rgba(255,255,255,0.05);border-radius:3px;color:#777">${d}</span>`).join('')}
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            ${t.days.filter(d=>d!=='Rest').map(d => `
-              <button onclick="window._startFromTemplate('${userId}','${d.replace(/'/g,"\\'")}','${t.name.replace(/'/g,"\\'")}');document.getElementById('confirmDialog').style.display='none'"
-                style="padding:5px 10px;background:rgba(255,224,64,0.1);border:1px solid rgba(255,224,64,0.2);color:#ffe040;border-radius:4px;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace">
-                + ${d}
-              </button>`).join('')}
-          </div>
-        </div>`).join('')}
-    </div>
-
-    <!-- Save custom template -->
-    <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:14px">
-      <div style="font-size:11px;color:#555;margin-bottom:8px">Save current week as template</div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="new-template-name" placeholder="e.g. My Peaking Block"
-          style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px">
-        <button class="btn btn-sm" onclick="window._saveCustomTemplate('${userId}')">Save</button>
-      </div>
-    </div>
-    <div style="margin-top:14px">
-      <button class="btn btn-danger btn-sm" onclick="document.getElementById('confirmDialog').style.display='none'">Close</button>
-    </div>
-  </div></div>`;
-};
-
-window._startFromTemplate = function(userId, dayLabel, templateName) {
-  // Pre-fill the new session form with the template day label
-  window.showAddSession(userId);
-  setTimeout(() => {
-    const lb = document.getElementById('sess-label');
-    if (lb) lb.value = dayLabel;
-  }, 100);
-};
-
-window._saveCustomTemplate = function(userId) {
-  const name = document.getElementById('new-template-name')?.value?.trim();
-  if (!name) return;
-  const sessions = trainingData[userId] || [];
-  // Get last 7 days' session labels as the split
-  const recent = [...sessions].sort((a,b) => b.date.localeCompare(a.date)).slice(0,7);
-  const days = recent.length ? recent.map(s => s.label || 'Session').reverse() : ['Day 1'];
-  const saved = settings.customTemplates || [];
-  saved.push({ name, days });
-  saveSetting('customTemplates', saved);
-  window.showSplitTemplates(userId); // refresh
-};
-
-window._deleteTemplate = function(idx) {
-  const saved = settings.customTemplates || [];
-  saved.splice(idx, 1);
-  saveSetting('customTemplates', saved);
-};
-
 window.showAddSession = function(userId) {
   const el = document.getElementById('confirmDialog');
   el.style.display = 'flex';
@@ -5704,15 +4663,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 initFirebase(HARDCODED_CONFIG);
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW registered:', reg.scope))
-      .catch(err => console.log('SW failed:', err));
-  });
-}
 </script>
 </body>
 </html>
