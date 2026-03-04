@@ -10,8 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Prophecy">
 <link rel="manifest" href="manifest.json">
-<!-- Apple touch icons (no separate file needed — we use inline SVG data URI) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%2307070e'/%3E%3Ctext x='256' y='340' text-anchor='middle' font-size='280' font-family='Arial'%3E🏋️%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%2307070e'/%3E%3Ctext x='256' y='340' text-anchor='middle' font-size='280' font-family='Arial'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -448,13 +447,14 @@ function getTrueWeightNow(u) {
 
 // ── WATER SPIKE DETECTION ─────────────────────────────────
 // Water spike = any day-over-day jump > 1.9 lbs (no recovery check needed)
+// Water spike = day-over-day change of ±1 lb or more (up OR down)
 function detectSpikes(entries) {
   if (!entries || entries.length < 2) return new Set();
   const sorted = [...entries].sort((a,b)=>a.date.localeCompare(b.date));
   const spikes = new Set();
   for (let i=1; i<sorted.length; i++) {
     const delta = sorted[i].weight - sorted[i-1].weight;
-    if (delta > 1.9) spikes.add(sorted[i].date);
+    if (Math.abs(delta) >= 1.0) spikes.add(sorted[i].date);
   }
   return spikes;
 }
@@ -463,15 +463,20 @@ function detectSpikes(entries) {
 function calcGoalPrediction(u) {
   if (!u.goalWeight || !u.entries || u.entries.length < 2) return null;
   // Use true weight for rate calculation (smoother)
+  // Use same week-over-week approach as calcRateOfLoss for consistency
+  const rol = calcRateOfLoss(u);
   const tw = calcTrueWeight(u.entries);
-  if (tw.length < 2) return null;
-  const recent = tw.slice(-4);
-  const days = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 864e5;
-  if (days < 3) return null;
-  const currentTW = recent[recent.length-1].weight;
+  if (!tw.length) return null;
+  const currentTW = tw[tw.length - 1].weight;
   const toGoal = currentTW - u.goalWeight;
   if (toGoal <= 0) return { reached: true };
-  const weeklyChange = (recent[0].weight - recent[recent.length-1].weight) / days * 7;
+  // Use week-over-week rate if available, otherwise fall back to long-term trend
+  const weeklyChange = rol ? parseFloat(rol.perWeek) : (() => {
+    if (tw.length < 4) return 0;
+    const oldest = tw[0], newest = tw[tw.length-1];
+    const days = (new Date(newest.date+'T00:00:00') - new Date(oldest.date+'T00:00:00')) / 864e5;
+    return days > 0 ? (oldest.weight - newest.weight) / days * 7 : 0;
+  })();
   if (weeklyChange <= 0) return { gained: true, weeklyChange: weeklyChange.toFixed(2) };
   const weeksNeeded = toGoal / weeklyChange;
   const daysNeeded = Math.round(weeksNeeded * 7);
@@ -482,19 +487,13 @@ function calcGoalPrediction(u) {
   const optDays = Math.round((toGoal / optRate) * 7);
   const optDate = new Date();
   optDate.setDate(optDate.getDate() + optDays);
-  // Calorie deficit estimate (3500 kcal per lb of fat)
-  const deficitPerDay = Math.round((weeklyChange * 3500) / 7);
-  const optDeficit = Math.round((optRate * 3500) / 7);
-  // Estimate TDEE from bodyweight (Mifflin-St Jeor approximation for sedentary male ~35yo)
-  // Then subtract deficit to get estimated intake
-  const estTDEE = Math.round(currentTW * 14.5); // conservative multiplier (lbs × 14-16 = TDEE)
-  const estIntake = Math.max(800, estTDEE - deficitPerDay);
+  // (Deficit/intake estimates removed — too inaccurate without knowing TDEE)
   return {
     reached: false, gained: false,
     currentRate: weeklyChange.toFixed(2),
     daysNeeded, goalDate: goalDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
     optDays, optDate: optDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
-    deficitPerDay, estIntake, estTDEE, toGoal: toGoal.toFixed(1),
+    toGoal: toGoal.toFixed(1),
     currentTW: currentTW.toFixed(1),
   };
 }
@@ -1019,7 +1018,7 @@ function renderCompare() {
       <span class="filter-sep">→ To</span>
       <input type="date" id="filterEnd" value="${compareEndDate}" min="${minDate}" max="${maxDate}"
         style="width:auto;flex:1;min-width:130px;padding:7px 10px;font-size:12px" onchange="updateFilter()">
-      <button class="filter-reset" onclick="resetFilter()">Reset</button>
+      <button class="filter-reset" onclick="window.resetFilter()">Reset</button>
     </div>
 
     ${compareStartDate || compareEndDate ? `
@@ -1195,178 +1194,7 @@ window.resetFilter = function() {
   renderCompare();
 };
 
-// ── ADD ENTRY ──────────────────────────────────────────────
-function renderAddEntry() {
-  const u = getActive();
-  const el = document.getElementById("view-add-entry");
-  if (!u) { el.innerHTML=`<div class="card"><div style="color:var(--muted);text-align:center;padding:20px">Select a person first.</div></div>`; return; }
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-title"><span class="card-title-icon">⚖️</span>Log Weight Entry</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-        <span class="dot" style="background:${u.color}"></span>
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${u.color};letter-spacing:0.05em">${u.name}</span>
-        ${phaseLabel(u.phase||'cut')}
-      </div>
-      <div class="form-group"><label>Date</label><input type="date" id="e-date" value="${new Date().toISOString().split('T')[0]}"></div>
-      <div class="form-group"><label>Weight (lbs)</label><input type="number" id="e-weight" step="0.1" placeholder="e.g. 215"></div>
-      <div class="form-group"><label>Note (optional)</label><input type="text" id="e-note" placeholder="e.g. Morning, post-cardio"></div>
-      <button class="btn" onclick="submitEntry()">Log Entry</button>
-    </div>`;
-}
-
-window.submitEntry = async function() {
-  const u = getActive(); if(!u) return;
-  const weight = parseFloat(document.getElementById("e-weight").value);
-  const date = document.getElementById("e-date").value;
-  const note = document.getElementById("e-note").value.trim();
-  if (!weight || !date) { alert("Please enter a date and weight."); return; }
-  await saveEntry(u.id, { id:genId(), date, weight, note });
-  showView("dashboard", null);
-};
-
-window.confirmDelEntry = function(userId, entryId, date, weight) {
-  showConfirm("Delete Entry?", `Remove the ${weight} lbs entry from ${fmtDate(date)}?`, async () => {
-    await deleteEntry(userId, entryId);
-  });
-};
-
-// ── ADD USER ───────────────────────────────────────────────
-function renderAddUser() {
-  document.getElementById("view-add-user").innerHTML = `
-    <div class="card">
-      <div class="card-title"><span class="card-title-icon">🏋️</span>Add Athlete</div>
-      <div class="form-group"><label>Name</label><input type="text" id="u-name" placeholder="e.g. Big Dave"></div>
-      <div class="form-group"><label>Starting Weight (lbs)</label><input type="number" id="u-start" step="0.1" placeholder="e.g. 245"></div>
-      <div class="form-group"><label>Goal Weight (lbs) — optional</label><input type="number" id="u-goal" step="0.1" placeholder="e.g. 220"></div>
-      <div class="form-group"><label>Height (inches) — optional, for BMI</label><input type="number" id="u-height" placeholder="e.g. 72"></div>
-      <div class="form-group"><label>Body Fat % — optional, for FFMI</label><input type="number" id="u-bf" step="0.1" placeholder="e.g. 12"></div>
-      <div class="form-group"><label>Current Phase</label>
-        <select id="u-phase">
-          <option value="cut">Cut</option>
-          <option value="bulk">Bulk</option>
-          <option value="maintain">Maintain</option>
-        </select>
-      </div>
-      <button class="btn" onclick="submitUser()">Add Athlete</button>
-    </div>`;
-}
-
-window.submitUser = async function() {
-  const name = document.getElementById("u-name").value.trim();
-  const startWeight = parseFloat(document.getElementById("u-start").value);
-  if (!name || !startWeight) { alert("Name and starting weight are required."); return; }
-  const user = {
-    id:genId(), name, startWeight,
-    goalWeight: parseFloat(document.getElementById("u-goal").value)||null,
-    height: parseFloat(document.getElementById("u-height").value)||null,
-    bodyFat: parseFloat(document.getElementById("u-bf").value)||null,
-    phase: document.getElementById("u-phase").value,
-    color: COLORS[users.length % COLORS.length],
-    createdAt: Date.now(),
-  };
-  activeUserId = user.id;
-  await saveNewUser(user);
-  showView("dashboard", null);
-};
-
-// ── EDIT PROFILE ──────────────────────────────────────────
-window.showEditProfile = function(userId) {
-  const u = users.find(x => x.id===userId); if(!u) return;
-  const el = document.getElementById("confirmDialog");
-  el.style.display = "flex";
-  el.innerHTML = `<div class="confirm-dialog"><div class="confirm-box" style="max-width:440px;text-align:left">
-    <h3 style="color:var(--cyan);margin-bottom:18px">Edit Profile</h3>
-    <div class="form-group"><label>Name</label><input type="text" id="ep-name" value="${u.name}"></div>
-    <div class="form-group"><label>Starting Weight (lbs)</label><input type="number" id="ep-start" step="0.1" value="${u.startWeight}"></div>
-    <div class="form-group"><label>Goal Weight (lbs)</label><input type="number" id="ep-goal" step="0.1" value="${u.goalWeight??''}"></div>
-    <div class="form-group"><label>Height (inches)</label><input type="number" id="ep-height" value="${u.height??''}"></div>
-    <div class="form-group"><label>Body Fat % — optional, for FFMI</label><input type="number" id="ep-bf" step="0.1" value="${u.bodyFat??''}"></div>
-    <div class="form-group" style="margin-bottom:24px"><label>Current Phase</label>
-      <select id="ep-phase">
-        <option value="cut" ${u.phase==='cut'?'selected':''}>Cut</option>
-        <option value="bulk" ${u.phase==='bulk'?'selected':''}>Bulk</option>
-        <option value="maintain" ${u.phase==='maintain'?'selected':''}>Maintain</option>
-      </select>
-    </div>
-    <div class="confirm-btns">
-      <button class="btn" id="epSave" style="flex:1">Save Changes</button>
-      <button class="btn btn-danger" id="epCancel" style="flex:1">Cancel</button>
-    </div>
-  </div></div>`;
-  document.getElementById("epCancel").onclick = () => { el.style.display="none"; };
-  document.getElementById("epSave").onclick = async () => {
-    const name = document.getElementById("ep-name").value.trim();
-    const startWeight = parseFloat(document.getElementById("ep-start").value);
-    if (!name || !startWeight) { alert("Name and starting weight are required."); return; }
-    await set(ref(db, `users/${userId}/name`), name);
-    await set(ref(db, `users/${userId}/startWeight`), startWeight);
-    await set(ref(db, `users/${userId}/goalWeight`), parseFloat(document.getElementById("ep-goal").value)||null);
-    await set(ref(db, `users/${userId}/height`), parseFloat(document.getElementById("ep-height").value)||null);
-    await set(ref(db, `users/${userId}/bodyFat`), parseFloat(document.getElementById("ep-bf").value)||null);
-    await set(ref(db, `users/${userId}/phase`), document.getElementById("ep-phase").value);
-    el.style.display="none";
-  };
-};
-
-// ── DELETE ─────────────────────────────────────────────────
-window.confirmDelUser = function(userId, name) {
-  showConfirm(`Remove ${name}?`, `This permanently deletes ${name} and all their data.`, async () => {
-    await deleteUser(userId);
-  });
-};
-
-// ── POWERLIFTING ───────────────────────────────────────────
-const LIFTS = [
-  { key:"squat",   label:"Back Squat",     icon:"🟥", color:"#ff4d8d" },
-  { key:"bench",   label:"Bench Press",    icon:"🟦", color:"#00e5ff" },
-  { key:"deadlift",label:"Deadlift",       icon:"⬛", color:"#ffe040" },
-  { key:"ohp",     label:"Overhead Press", icon:"🟩", color:"#69ff47" },
-];
-
-// Wilks2 (2020 updated formula — IPF standard)
-// Coefficients from: https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/IPF_Technical_Rules_Book_2023.pdf
-function calcWilks(total, bw, isMale=true) {
-  if (!total || !bw) return null;
-  const bwKg = bw / 2.2046226218;
-  const totKg = total / 2.2046226218;
-  // Wilks2 polynomials (6th degree)
-  let a, b, c, d, e, f;
-  if (isMale) {
-    a = -216.0475144; b = 16.2606339; c = -0.002388645;
-    d = -0.00113732; e = 7.01863e-6; f = -1.291e-8;
-  } else {
-    a = 594.31747775582; b = -27.23842536447; c = 0.82112226871;
-    d = -0.00930733913; e = 4.731582e-5; f = -9.054e-8;
-  }
-  const denom = a + b*bwKg + c*bwKg**2 + d*bwKg**3 + e*bwKg**4 + f*bwKg**5;
-  const coeff = 500 / denom;
-  return (coeff * totKg).toFixed(1);
-}
-
-function calcFFMI(weightLbs, heightIn, bodyFatPct) {
-  if (!weightLbs || !heightIn || !bodyFatPct) return null;
-  const weightKg = weightLbs / 2.2046;
-  const heightM  = (heightIn * 2.54) / 100;
-  const leanMass = weightKg * (1 - bodyFatPct / 100);
-  const ffmi = leanMass / (heightM * heightM);
-  const normalised = ffmi + 6.3 * (1.8 - heightM);
-  return { ffmi: ffmi.toFixed(1), norm: normalised.toFixed(1) };
-}
-// Updated FFMI labels — natural cap is ~25, enhanced starts above
-function ffmiLabel(norm) {
-  const n = parseFloat(norm);
-  if (n < 16)  return { label:'Below Average',   color:'#666' };
-  if (n < 18)  return { label:'Average',          color:'#aaa' };
-  if (n < 20)  return { label:'Above Average',    color:'#ff6b2b' };
-  if (n < 22)  return { label:'Excellent',        color:'#ffe040' };
-  if (n < 23)  return { label:'Near Natty Peak',  color:'#69ff47' };
-  if (n < 25)  return { label:'Natural Elite',    color:'#00e5ff' };
-  if (n < 28)  return { label:'Enhanced',         color:'#c77dff' };
-  return               { label:'Enhanced — High', color:'#ff4d8d' };
-}
-// ── BODYBUILDER–POWERLIFTER INDEX (BPI) ───────────────────
-// BPI > 0 → Powerlifter side, BPI < 0 → Bodybuilder side
+// ── BPI CALCULATION ───────────────────────────────────────────
 function calcBPI(u) {
   const currentW = u.entries.length > 0
     ? [...u.entries].sort((a,b) => b.date.localeCompare(a.date))[0].weight
@@ -1380,24 +1208,18 @@ function calcBPI(u) {
   const ffmiData = calcFFMI(currentW, u.height, u.bodyFat);
   const bmi = u.height ? parseFloat(((currentW / Math.pow(u.height, 2)) * 703).toFixed(1)) : null;
 
-  // Need at least one strength signal OR muscularity signal
   const hasStrength = sqPR || bpPR || dlPR || ohpPR;
   const hasMuscularity = ffmiData && bmi;
   if (!hasStrength && !hasMuscularity) return null;
 
   let normalizedStrength = null;
   if (hasStrength) {
-    // STEP 1: Weighted relative strength index
-    // Weights: squat 35%, deadlift 35%, bench 20%, ohp 10%
     let weightedSum = 0, weightTotal = 0;
     if (sqPR)  { weightedSum += 0.35 * (sqPR.weight  / currentW); weightTotal += 0.35; }
     if (dlPR)  { weightedSum += 0.35 * (dlPR.weight  / currentW); weightTotal += 0.35; }
     if (bpPR)  { weightedSum += 0.20 * (bpPR.weight  / currentW); weightTotal += 0.20; }
     if (ohpPR) { weightedSum += 0.10 * (ohpPR.weight / currentW); weightTotal += 0.10; }
-    // Rescale to full weight so partial data still gives a valid index
     const strengthIndex = weightTotal > 0 ? weightedSum / weightTotal : 0;
-
-    // STEP 2: Normalize — novice ~2.0x BW combined, elite ~6.0x BW combined
     const STRENGTH_MIN = 2.0, STRENGTH_MAX = 6.0;
     normalizedStrength = Math.min(1, Math.max(0,
       (strengthIndex - STRENGTH_MIN) / (STRENGTH_MAX - STRENGTH_MIN)
@@ -2036,20 +1858,55 @@ function rateOfGainWidget(u) {
 // Rate of Loss widget (for cut phase)
 function calcRateOfLoss(u) {
   if (!u.entries || u.entries.length < 2) return null;
-  // Uses TRUE WEIGHT (7-day avg) — but still includes ~1-2 lbs of water weight in total loss
-  // We apply a 15% water retention factor: not all scale loss is fat
-  // Actual fat loss ≈ scale loss × 0.85 (the rest is glycogen/water depletion)
-  const tw = calcTrueWeight(u.entries);
-  if (tw.length < 2) return null;
-  const recent = tw.slice(-4);
-  if (recent.length < 2) return null;
-  const days = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 864e5;
-  if (days < 3) return null;
-  const totalChange = recent[0].weight - recent[recent.length-1].weight; // positive = losing
-  const perWeek = (totalChange / days) * 7;
-  // Estimate fat loss component (85% of scale loss is fat; 15% water/glycogen)
-  const fatLossPerWeek = perWeek * 0.85;
-  return { perWeek: perWeek.toFixed(2), fatPerWeek: fatLossPerWeek.toFixed(2), change: totalChange.toFixed(1), days: Math.round(days), usingTrueWeight: true };
+  // Rate = this week's true-weight avg  vs  last week's true-weight avg
+  // "True weight" = 7-day rolling average of raw entries
+  const sorted = [...u.entries].sort((a,b) => a.date.localeCompare(b.date));
+  const today = new Date();
+
+  // Build 7-day avg for any date window
+  function avgWeightInWindow(fromDate, toDate) {
+    const inWindow = sorted.filter(e => {
+      const d = new Date(e.date + 'T00:00:00');
+      return d >= fromDate && d <= toDate;
+    });
+    if (!inWindow.length) return null;
+    return inWindow.reduce((s,e) => s + e.weight, 0) / inWindow.length;
+  }
+
+  // This week: last 7 days
+  const thisWeekEnd   = new Date(today);
+  const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - 6);
+  // Last week: 7–14 days ago
+  const lastWeekEnd   = new Date(today); lastWeekEnd.setDate(today.getDate() - 7);
+  const lastWeekStart = new Date(today); lastWeekStart.setDate(today.getDate() - 13);
+
+  const thisWeekAvg = avgWeightInWindow(thisWeekStart, thisWeekEnd);
+  const lastWeekAvg = avgWeightInWindow(lastWeekStart, lastWeekEnd);
+
+  // Fallback: if not enough data in rolling windows, use oldest vs newest true weight
+  if (thisWeekAvg === null || lastWeekAvg === null) {
+    const tw = calcTrueWeight(u.entries);
+    if (tw.length < 4) return null;
+    const oldest = tw[0], newest = tw[tw.length - 1];
+    const days = (new Date(newest.date + 'T00:00:00') - new Date(oldest.date + 'T00:00:00')) / 864e5;
+    if (days < 7) return null;
+    const perWeek = ((oldest.weight - newest.weight) / days) * 7;
+    const curW = newest.weight;
+    return { perWeek: perWeek.toFixed(2), change: (oldest.weight - newest.weight).toFixed(1),
+             days: Math.round(days), thisWeekAvg: newest.weight.toFixed(1),
+             lastWeekAvg: oldest.weight.toFixed(1), usingFallback: true, curW };
+  }
+
+  const perWeek = lastWeekAvg - thisWeekAvg; // positive = losing weight
+  return {
+    perWeek: perWeek.toFixed(2),
+    change: perWeek.toFixed(2),
+    days: 7,
+    thisWeekAvg: thisWeekAvg.toFixed(1),
+    lastWeekAvg: lastWeekAvg.toFixed(1),
+    usingFallback: false,
+    curW: thisWeekAvg,
+  };
 }
 
 function rateOfLossWidget(u) {
@@ -2057,7 +1914,7 @@ function rateOfLossWidget(u) {
   const rol = calcRateOfLoss(u);
   if (!rol) return "";
   const r = parseFloat(rol.perWeek);
-  const curW = u.entries.length>0 ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : (u.startWeight||200);
+  const curW = rol.curW || (u.entries.length>0 ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : (u.startWeight||200));
   const pctPerWeek = (r / curW * 100);
   const optLow = curW * 0.005;
   const optHigh = curW * 0.010;
@@ -2103,7 +1960,11 @@ function rateOfLossWidget(u) {
       <span style="color:rgba(255,77,141,0.6)">Too fast</span>
     </div>
     <div style="font-size:12px;color:#666;font-style:italic">${advice}</div>
-    <div style="font-size:11px;color:#333;margin-top:6px">Over ${rol.days} days · ${rol.change>=0?'−':'+'}${Math.abs(parseFloat(rol.change)).toFixed(1)} lbs true weight</div>
+    <div style="font-size:11px;color:#333;margin-top:6px">
+      ${rol.usingFallback
+        ? `Long-term avg over ${rol.days} days · ${Math.abs(parseFloat(rol.change)).toFixed(1)} lbs total`
+        : `This week avg: <strong style="color:${statusColor}">${rol.thisWeekAvg} lbs</strong> · Last week avg: <strong style="color:#555">${rol.lastWeekAvg} lbs</strong>`}
+    </div>
   </div>`;
 }
 
@@ -2292,23 +2153,12 @@ function goalPredictionWidget(u) {
       </div>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:120px;background:rgba(255,107,43,0.07);border:1px solid rgba(255,107,43,0.15);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:rgba(255,107,43,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Est. Daily Deficit</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#ff6b2b;line-height:1">${pred.deficitPerDay}</div>
-        <div style="font-size:11px;color:#555">kcal/day</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.15);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:rgba(0,229,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Est. Daily Intake</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#00e5ff;line-height:1">${pred.estIntake}</div>
-        <div style="font-size:11px;color:#555">kcal/day</div>
-      </div>
       <div style="flex:1;min-width:120px;background:rgba(199,125,255,0.07);border:1px solid rgba(199,125,255,0.15);border-radius:8px;padding:12px">
         <div style="font-size:10px;color:rgba(199,125,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Still to ${phaseVerb}</div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#c77dff;line-height:1">${pred.toGoal}</div>
         <div style="font-size:11px;color:#555">lbs (true wt)</div>
       </div>
     </div>
-    <div style="font-size:11px;color:#444;margin-top:12px;font-style:italic">⚡ Deficit = weekly loss × 3,500 ÷ 7. Intake = est. TDEE (~${pred.estTDEE} kcal) minus deficit. Actual intake varies.</div>
   </div>`;
 }
 
@@ -2635,6 +2485,32 @@ function renderCharts() {
         }).join('')}
       </div>`;
     }).join('')}
+
+    <!-- WEIGHT × STRENGTH SCATTER: lbs lost vs strength retained -->
+    ${usersWithData.filter(u=>u.entries.length>=5 && (getLiftPR(u,'squat')||getLiftPR(u,'bench')||getLiftPR(u,'deadlift'))).length >= 1 ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="card-title-icon">📐</span>Bodyweight vs Strength Over Time
+        <span style="margin-left:auto;font-size:11px;color:#555">scale loss vs lift progress — are you keeping your muscle?</span>
+      </div>
+      <canvas id="bwStrengthChart" style="max-height:320px"></canvas>
+    </div>` : ''}
+
+    <!-- WEIGH-IN CONSISTENCY HEATMAP -->
+    ${usersWithData.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="card-title-icon">🗓</span>Weigh-in Consistency — Last 12 Weeks</div>
+      <div id="weighinHeatmap"></div>
+    </div>` : ''}
+
+    <!-- WEEK-OVER-WEEK DELTA TABLE -->
+    ${usersWithData.length >= 2 ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title"><span class="card-title-icon">📋</span>Week-over-Week Summary
+        <span style="margin-left:auto;font-size:11px;color:#555">True weight change per week per athlete</span>
+      </div>
+      <div id="wowTable" style="overflow-x:auto"></div>
+    </div>` : ''}
+
   `;
 
   setTimeout(() => {
@@ -2709,6 +2585,158 @@ function renderCharts() {
         }
       });
     });
+
+    // ── BODYWEIGHT vs STRENGTH CHART ──────────────────────────
+    const bwStrCtx = document.getElementById('bwStrengthChart');
+    if (bwStrCtx) {
+      const eligible = usersWithData.filter(u =>
+        u.entries.length >= 5 && (getLiftPR(u,'squat')||getLiftPR(u,'bench')||getLiftPR(u,'deadlift'))
+      );
+      const datasets = [];
+      eligible.forEach(u => {
+        // Normalised bodyweight: % change from start
+        const sorted = [...u.entries].sort((a,b)=>a.date.localeCompare(b.date));
+        const startW = sorted[0].weight;
+        const bwPoints = sorted.map(e => ({
+          x: e.date, y: parseFloat(((e.weight - startW) / startW * 100).toFixed(2))
+        }));
+        datasets.push({ label: u.name + ' Weight %', data: bwPoints,
+          borderColor: u.color + '99', backgroundColor: 'transparent',
+          tension: 0.35, pointRadius: 2, borderDash: [4,3],
+          parsing: { xAxisKey:'x', yAxisKey:'y' } });
+        // PR dots — each logged PR as a % of first PR for that lift
+        ['squat','bench','deadlift'].forEach(liftKey => {
+          const lift = LIFTS.find(l=>l.key===liftKey);
+          if (!lift || !u.prs?.[liftKey]?.length) return;
+          const prSorted = [...u.prs[liftKey]].sort((a,b)=>a.date.localeCompare(b.date));
+          if (!prSorted.length) return;
+          const firstPR = prSorted[0].weight;
+          const prPoints = prSorted.map(pr => ({
+            x: pr.date, y: parseFloat(((pr.weight - firstPR) / firstPR * 100).toFixed(2))
+          }));
+          datasets.push({ label: u.name + ' ' + lift.label + ' %',
+            data: prPoints, borderColor: lift.color,
+            backgroundColor: lift.color + '88', tension: 0.3,
+            pointRadius: 5, pointStyle: 'circle', showLine: true,
+            parsing: { xAxisKey:'x', yAxisKey:'y' } });
+        });
+      });
+      new Chart(bwStrCtx, { type: 'line',
+        data: { datasets },
+        options: {
+          parsing: false,
+          scales: {
+            x: { type:'category', ticks:{ color:'#555', font:{family:'DM Mono',size:9}, maxTicksLimit:8 },
+                 grid:{ color:'rgba(255,255,255,0.04)' } },
+            y: { title:{ display:true, text:'% change from start', color:'#555', font:{size:10} },
+                 ticks:{ color:'#555', font:{family:'DM Mono',size:10},
+                   callback: v => (v>=0?'+':'')+v+'%' },
+                 grid:{ color:'rgba(255,255,255,0.04)' } }
+          },
+          plugins:{ legend:{ labels:{ color:'#888', font:{family:'DM Mono',size:10}, boxWidth:10 } },
+            tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.parsed.y>=0?'+':'')+ctx.parsed.y+'%' } }
+          },
+          responsive:true, maintainAspectRatio:true,
+        }
+      });
+    }
+
+    // ── WEIGH-IN HEATMAP ──────────────────────────────────────
+    const heatmapEl = document.getElementById('weighinHeatmap');
+    if (heatmapEl && usersWithData.length) {
+      const weeks = 12;
+      const today = new Date();
+      // Build date set for each user
+      const userDateSets = usersWithData.map(u => new Set(u.entries.map(e=>e.date)));
+      // Generate week × day grid
+      let html = '<div style="overflow-x:auto"><table style="border-collapse:separate;border-spacing:3px;width:100%">';
+      // Header row: day labels
+      html += '<tr><td style="font-size:9px;color:#333;min-width:60px"></td>';
+      const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      dayLabels.forEach(d => { html += `<td style="font-size:9px;color:#444;text-align:center;padding:2px">${d}</td>`; });
+      html += '</tr>';
+      // User rows
+      usersWithData.forEach(u => {
+        const dateSet = userDateSets[usersWithData.indexOf(u)];
+        html += `<tr><td style="font-size:10px;color:${u.color};font-family:'Bebas Neue',sans-serif;letter-spacing:0.06em;padding-right:8px;white-space:nowrap">${u.name}</td>`;
+        // Get sunday of 12 weeks ago
+        const startSun = new Date(today);
+        startSun.setDate(today.getDate() - today.getDay() - (weeks-1)*7);
+        for (let w = 0; w < weeks; w++) {
+          for (let d = 0; d < 7; d++) {
+            const cellDate = new Date(startSun);
+            cellDate.setDate(startSun.getDate() + w*7 + d);
+            const dateStr = cellDate.toISOString().split('T')[0];
+            const isFuture = cellDate > today;
+            const logged = dateSet.has(dateStr);
+            const bg = isFuture ? 'rgba(255,255,255,0.02)' : logged ? u.color : 'rgba(255,255,255,0.05)';
+            const border = logged ? u.color+'66' : 'rgba(255,255,255,0.06)';
+            html += `<td title="${dateStr}" style="width:20px;height:20px;background:${bg};border-radius:3px;border:1px solid ${border}"></td>`;
+          }
+        }
+        html += '</tr>';
+      });
+      html += '</table></div>';
+      // Legend
+      html += '<div style="display:flex;gap:16px;margin-top:8px;font-size:10px;color:#444">';
+      html += '<span>□ No entry</span>';
+      usersWithData.forEach(u => { html += `<span style="color:${u.color}">■ ${u.name}</span>`; });
+      html += '</div>';
+      heatmapEl.innerHTML = html;
+    }
+
+    // ── WEEK-OVER-WEEK DELTA TABLE ─────────────────────────────
+    const wowEl = document.getElementById('wowTable');
+    if (wowEl && usersWithData.length >= 2) {
+      const weeks = 8;
+      const today = new Date();
+      // Get last N Sunday-start weeks
+      const weekStarts = [];
+      for (let w = weeks-1; w >= 0; w--) {
+        const sun = new Date(today);
+        sun.setDate(today.getDate() - today.getDay() - w*7);
+        weekStarts.push(sun.toISOString().split('T')[0]);
+      }
+      // For each user, compute true weight avg per week
+      let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>';
+      html += '<th style="text-align:left;font-size:10px;color:#555;padding:6px 10px">Athlete</th>';
+      weekStarts.forEach(ws => {
+        const d = new Date(ws+'T00:00:00');
+        html += `<th style="text-align:center;font-size:9px;color:#444;padding:4px 6px">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      usersWithData.forEach(u => {
+        html += `<tr><td style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:${u.color};padding:6px 10px">${u.name}</td>`;
+        let prevAvg = null;
+        weekStarts.forEach(ws => {
+          const d = new Date(ws+'T00:00:00');
+          const nextSun = new Date(d); nextSun.setDate(d.getDate()+7);
+          const inWeek = u.entries.filter(e => {
+            const ed = new Date(e.date+'T00:00:00');
+            return ed >= d && ed < nextSun;
+          });
+          const avg = inWeek.length ? inWeek.reduce((s,e)=>s+e.weight,0)/inWeek.length : null;
+          let cell = '—';
+          let color = '#333';
+          if (avg !== null) {
+            const delta = prevAvg !== null ? avg - prevAvg : null;
+            cell = avg.toFixed(1);
+            if (delta !== null) {
+              const sign = delta < 0 ? '▼' : delta > 0 ? '▲' : '●';
+              const dColor = delta < 0 ? '#69ff47' : delta > 0 ? '#ff4d8d' : '#555';
+              cell += `<div style="font-size:9px;color:${dColor}">${sign} ${Math.abs(delta).toFixed(1)}</div>`;
+              color = '#aaa';
+            }
+            prevAvg = avg;
+          } else { prevAvg = null; }
+          html += `<td style="text-align:center;font-size:11px;color:${color};padding:4px 6px;border-top:1px solid rgba(255,255,255,0.04)">${cell}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      wowEl.innerHTML = html;
+    }
+
   }, 50);
 }
 
@@ -2904,11 +2932,15 @@ function collapseSection(id, title, contentHtml, defaultOpen=true) {
 // ── ALL TIME LOW ─────────────────────────────────────────
 function getAllTimeLow(u) {
   if (!u.entries || u.entries.length === 0) return null;
-  const sorted = [...u.entries].sort((a,b) => a.weight - b.weight);
+  // Exclude spike-flagged entries so a freak dehydrated weigh-in doesn't become ATL
+  const spikes = detectSpikes(u.entries);
+  const cleanEntries = u.entries.filter(e => !spikes.has(e.date));
+  const pool = cleanEntries.length >= 3 ? cleanEntries : u.entries; // fallback if too few clean entries
+  const sorted = [...pool].sort((a,b) => a.weight - b.weight);
   const atl = sorted[0];
-  // Check if current weight is near ATL (within 2 lbs)
+  // Use true weight for current comparison (avoids spike inflating "near ATL")
   const tw = getTrueWeightNow(u);
-  const curW = u.entries.sort ? [...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0].weight : null;
+  const curW = tw ?? ([...u.entries].sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight ?? null);
   const isAtATL = curW !== null && Math.abs(curW - atl.weight) <= 2.0;
   const isNewATL = curW !== null && curW < atl.weight;
   return { weight: atl.weight, date: atl.date, isAtATL, isNewATL, current: curW };
@@ -3509,45 +3541,188 @@ let trainingListening = false;
 
 // ── MUSCLE GROUP MAP ──────────────────────────────────────────
 const MUSCLE_MAP = {
+  // ── CHEST ──────────────────────────────────────────────────
+  'bench press':['chest','triceps','front delt'],
   'bench':['chest','triceps','front delt'],
   'close grip bench':['triceps','chest'],
   'tempo bench':['chest','triceps'],
+  'incline bench':['chest','front delt','triceps'],
+  'decline bench':['chest','triceps'],
   'incline db':['chest','front delt'],
+  'incline dumbbell':['chest','front delt'],
+  'db press':['chest','triceps','front delt'],
+  'dumbbell press':['chest','triceps','front delt'],
+  'incline press':['chest','front delt','triceps'],
+  'decline press':['chest','triceps'],
+  'cable fly':['chest'],
   'incline cable fly':['chest'],
-  'chest machine':['chest'],
+  'cable crossover':['chest'],
+  'chest fly':['chest'],
   'pec dec':['chest','front delt'],
-  'squat':['quads','glutes','core'],
-  'front squat':['quads','core'],
-  'barbell bulgarians':['quads','glutes'],
-  'rdl':['hamstrings','glutes','lower back'],
-  'good morning':['hamstrings','lower back'],
-  'deadlift':['lower back','glutes','hamstrings'],
-  'leg curl':['hamstrings'],
-  'sl lying leg curl':['hamstrings'],
-  'leg extension':['quads'],
-  'sl leg extension':['quads'],
-  'sl leg press':['quads','glutes'],
-  'ohp':['front delt','triceps'],
-  'btn press':['delts','triceps'],
-  'cable lat raise':['side delt'],
-  'face pull':['rear delt','upper back'],
-  'chest support rear delt fly':['rear delt'],
-  'pendlay row':['upper back','biceps'],
-  'db upper back row':['upper back','biceps'],
-  'cable upper back row':['upper back','biceps'],
+  'chest machine':['chest'],
+  'machine press':['chest','triceps'],
+  'push up':['chest','triceps','front delt'],
+  'pushup':['chest','triceps','front delt'],
+  'dips':['chest','triceps'],
+  'chest dip':['chest','triceps'],
+  // ── BACK — LATS ────────────────────────────────────────────
+  'pull up':['lats','biceps'],
+  'pull-up':['lats','biceps'],
+  'pullup':['lats','biceps'],
+  'chin up':['lats','biceps'],
+  'chin-up':['lats','biceps'],
+  'chinup':['lats','biceps'],
+  'weighted pull':['lats','biceps'],
+  'lat pulldown':['lats','biceps'],
+  'pulldown':['lats','biceps'],
   'iliac pulldown':['lats'],
   'mag lat pulldown':['lats','biceps'],
   'wide grip weighted pull-ups':['lats','biceps'],
   'db lat pullover':['lats'],
+  'cable pullover':['lats'],
+  'straight arm pulldown':['lats'],
+  'straight-arm':['lats'],
+  // ── BACK — UPPER ───────────────────────────────────────────
+  'barbell row':['upper back','lats','biceps'],
+  'bent over row':['upper back','lats','biceps'],
+  'pendlay row':['upper back','lats','biceps'],
+  'yates row':['upper back','lats','biceps'],
+  'db row':['upper back','lats','biceps'],
+  'dumbbell row':['upper back','lats','biceps'],
+  'db upper back row':['upper back','biceps'],
+  'cable upper back row':['upper back','biceps'],
+  'cable row':['upper back','lats','biceps'],
+  'seated row':['upper back','lats','biceps'],
+  'machine row':['upper back','lats','biceps'],
+  'chest supported row':['upper back','biceps'],
+  'chest support':['upper back','biceps'],
+  'meadows row':['upper back','lats','biceps'],
+  'kroc row':['upper back','lats','biceps'],
+  't-bar row':['upper back','lats','biceps'],
+  'tbar row':['upper back','lats','biceps'],
+  'face pull':['rear delt','upper back'],
+  'chest support rear delt fly':['rear delt','upper back'],
+  'rear delt fly':['rear delt','upper back'],
+  'rear delt':['rear delt','upper back'],
+  'reverse fly':['rear delt','upper back'],
+  'band pull apart':['rear delt','upper back'],
+  // ── SHOULDERS ──────────────────────────────────────────────
+  'ohp':['front delt','side delt','triceps'],
+  'overhead press':['front delt','side delt','triceps'],
+  'military press':['front delt','side delt','triceps'],
+  'btn press':['front delt','side delt','triceps'],
+  'behind the neck':['front delt','side delt','triceps'],
+  'db shoulder press':['front delt','side delt','triceps'],
+  'db ohp':['front delt','side delt','triceps'],
+  'arnold press':['front delt','side delt','triceps'],
+  'seated db press':['front delt','side delt','triceps'],
+  'lateral raise':['side delt'],
+  'lat raise':['side delt'],
+  'cable lat raise':['side delt'],
+  'cable lateral':['side delt'],
+  'db lateral':['side delt'],
+  'machine lateral':['side delt'],
+  'front raise':['front delt'],
+  // ── ARMS — TRICEPS ─────────────────────────────────────────
   'tricep pushdown':['triceps'],
-  'katana tricep ext':['triceps'],
+  'tricep push down':['triceps'],
+  'pushdown':['triceps'],
+  'tricep extension':['triceps'],
+  'skull crusher':['triceps'],
+  'skullcrusher':['triceps'],
+  'jm press':['triceps'],
+  'overhead tricep':['triceps'],
+  'katana':['triceps'],
+  'tricep dip':['triceps'],
+  'cable tricep':['triceps'],
+  // ── ARMS — BICEPS ──────────────────────────────────────────
+  'barbell curl':['biceps'],
+  'bb curl':['biceps'],
+  'ez bar curl':['biceps'],
+  'ez curl':['biceps'],
+  'db curl':['biceps'],
+  'dumbbell curl':['biceps'],
+  'hammer curl':['biceps'],
+  'preacher curl':['biceps'],
   'lean back preacher curl':['biceps'],
+  'incline curl':['biceps'],
   'incline seat hammer curl':['biceps'],
+  'cable curl':['biceps'],
+  'machine curl':['biceps'],
+  'concentration curl':['biceps'],
+  'spider curl':['biceps'],
+  // ── LEGS — QUADS ───────────────────────────────────────────
+  'squat':['quads','glutes','core'],
+  'back squat':['quads','glutes','core'],
+  'front squat':['quads','core'],
+  'hack squat':['quads','glutes'],
+  'leg press':['quads','glutes'],
+  'sl leg press':['quads','glutes'],
+  'single leg press':['quads','glutes'],
+  'leg extension':['quads'],
+  'sl leg extension':['quads'],
+  'single leg extension':['quads'],
+  'split squat':['quads','glutes'],
+  'bulgarian':['quads','glutes'],
+  'barbell bulgarians':['quads','glutes'],
+  'lunge':['quads','glutes'],
+  'walking lunge':['quads','glutes'],
+  'step up':['quads','glutes'],
+  'sissy squat':['quads'],
+  'box squat':['quads','glutes'],
+  'safety bar squat':['quads','glutes'],
+  'ssb squat':['quads','glutes'],
+  // ── LEGS — HAMSTRINGS ──────────────────────────────────────
+  'rdl':['hamstrings','glutes','lower back'],
+  'romanian deadlift':['hamstrings','glutes','lower back'],
+  'stiff leg':['hamstrings','glutes','lower back'],
+  'good morning':['hamstrings','lower back'],
+  'deadlift':['hamstrings','glutes','lower back','traps'],
+  'conventional deadlift':['hamstrings','glutes','lower back','traps'],
+  'sumo deadlift':['hamstrings','glutes','lower back','adductors'],
+  'trap bar deadlift':['hamstrings','glutes','lower back','quads'],
+  'hex bar':['hamstrings','glutes','lower back','quads'],
+  'leg curl':['hamstrings'],
+  'lying leg curl':['hamstrings'],
+  'sl lying leg curl':['hamstrings'],
+  'seated leg curl':['hamstrings'],
+  'nordic curl':['hamstrings'],
+  'glute ham raise':['hamstrings','glutes'],
+  'ghr':['hamstrings','glutes'],
+  // ── GLUTES ─────────────────────────────────────────────────
+  'hip thrust':['glutes','hamstrings'],
+  'barbell hip thrust':['glutes','hamstrings'],
+  'glute bridge':['glutes'],
+  'cable kickback':['glutes'],
+  'abductor':['glutes'],
+  // ── CORE ───────────────────────────────────────────────────
   'hanging leg raise':['core'],
+  'leg raise':['core'],
   'cable ab crunch':['core'],
+  'ab crunch':['core'],
+  'crunch':['core'],
+  'plank':['core'],
   'suitcase hold':['core','obliques'],
-  'adductor':['adductors'],
+  'pallof press':['core','obliques'],
+  'oblique':['obliques'],
+  'russian twist':['core','obliques'],
+  'ab wheel':['core'],
+  'dragon flag':['core'],
+  // ── TRAPS ──────────────────────────────────────────────────
+  'shrug':['traps'],
   'kelsey shrug':['traps'],
+  'barbell shrug':['traps'],
+  'db shrug':['traps'],
+  'upright row':['traps','side delt'],
+  'rack pull':['traps','lower back'],
+  // ── CALVES ─────────────────────────────────────────────────
+  'calf raise':['calves'],
+  'standing calf':['calves'],
+  'seated calf':['calves'],
+  // ── ADDUCTORS ──────────────────────────────────────────────
+  'adductor':['adductors'],
+  'adduction':['adductors'],
+  'copenhagen':['adductors'],
 };
 
 function getMuscles(exerciseName) {
@@ -3771,6 +3946,54 @@ function getAllExercises(userId) {
 }
 
 // ── WEEKLY VOLUME PER MUSCLE ──────────────────────────────────
+// ── TONNAGE HELPERS ──────────────────────────────────────────
+function calcSessionTonnage(session) {
+  // Tonnage = sum of (weight × reps) for every set
+  let total = 0;
+  (session.exercises || []).forEach(ex => {
+    (ex.sets || []).forEach(st => {
+      if (st.weight && st.reps) total += st.weight * st.reps;
+    });
+  });
+  return total;
+}
+
+function getWeeklyTonnage(userId) {
+  const sessions = getUserSessions(userId);
+  const weeks = {};
+  sessions.forEach(s => {
+    const d = new Date(s.date + 'T00:00:00');
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    const wk = weekStart.toISOString().split('T')[0];
+    weeks[wk] = (weeks[wk] || 0) + calcSessionTonnage(s);
+  });
+  return weeks;
+}
+
+function getExerciseTonnage(userId) {
+  // Returns { exerciseName: { total, sessions, avgPerSession, peakSession, trend: [...] } }
+  const sessions = getUserSessions(userId);
+  const exMap = {};
+  sessions.forEach(s => {
+    (s.exercises || []).forEach(ex => {
+      if (!ex.name) return;
+      const name = ex.name;
+      const t = (ex.sets||[]).reduce((acc, st) => acc + (st.weight&&st.reps ? st.weight*st.reps : 0), 0);
+      if (!exMap[name]) exMap[name] = { total:0, sessions:0, peak:0, peakDate:'', trend:[] };
+      exMap[name].total += t;
+      exMap[name].sessions += 1;
+      if (t > exMap[name].peak) { exMap[name].peak = t; exMap[name].peakDate = s.date; }
+      exMap[name].trend.push({ date: s.date, tonnage: t });
+    });
+  });
+  Object.values(exMap).forEach(v => {
+    v.avgPerSession = v.sessions > 0 ? Math.round(v.total / v.sessions) : 0;
+    v.trend.sort((a,b) => a.date.localeCompare(b.date));
+  });
+  return exMap;
+}
+
 function getWeeklyVolume(userId) {
   const sessions = getUserSessions(userId);
   const today = new Date();
@@ -3798,10 +4021,12 @@ let trainingSubTab = 'log';       // 'log' | 'exercises' | 'volume' | 'import'
 let selectedExercise = null;      // exercise name for drill-down
 let editingSessionId = null;      // session being edited
 let exRangeWeeks = 0;             // 0 = all time, otherwise # of weeks
+let volRangeWeeks = 8;            // weeks to show in volume tab
 
 window.setTrainingTab = function(tab) { trainingSubTab = tab; selectedExercise = null; renderTraining(); };
 window.selectExercise = function(name) { selectedExercise = name; trainingSubTab = 'exercises'; renderTraining(); };
 window.setExRange = function(weeks) { exRangeWeeks = parseInt(weeks); renderTraining(); };
+window.setVolRange = function(weeks) { volRangeWeeks = parseInt(weeks); renderTraining(); };
 
 // ── RENDER TRAINING TAB ───────────────────────────────────────
 function renderTraining() {
@@ -3906,7 +4131,7 @@ function renderSessionCard(u, s) {
           <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${u.color}">${s.label || 'Session'}</span>
           <span style="font-size:10px;color:#444;background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:3px">Day ${s.cycle||'?'}</span>
         </div>
-        <div style="font-size:11px;color:#555;margin-bottom:10px">${fmtDate(s.date)} · ${totalSets} sets · ${totalVol ? Math.round(totalVol/1000)+'k lbs volume' : ''}</div>
+        <div style="font-size:11px;color:#555;margin-bottom:10px">${fmtDate(s.date)} · ${totalSets} sets · ${totalVol ? `<span style="color:#c77dff">${totalVol>=1000?(totalVol/1000).toFixed(1)+'k':totalVol} lbs tonnage</span>` : ''}</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
           ${exNames.slice(0,6).map(n => `<span style="font-size:10px;color:#555;background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:3px;cursor:pointer"
             onclick="window.selectExercise('${n.replace(/'/g,"\\'")}')">
@@ -4269,7 +4494,6 @@ function renderVolumeTab(u) {
   const allWeeks = Object.keys(weeklyVol).sort();
   if (!allWeeks.length) return `<div style="color:#444;text-align:center;padding:40px">No data yet. Log some sessions first.</div>`;
 
-  const volRangeWeeks = parseInt(document.getElementById('vol-range')?.value || 8);
   const weeks = allWeeks.slice(-volRangeWeeks);
 
   // Most recent week with data (may not be current calendar week)
@@ -4286,9 +4510,8 @@ function renderVolumeTab(u) {
       <span style="font-size:10px;color:#555;letter-spacing:0.12em;text-transform:uppercase">History window</span>
       <div style="display:flex;gap:4px">
         ${rangeOptions.map(([w,l]) => `<button class="chart-mode-btn ${volRangeWeeks===w?'active':''}"
-          onclick="document.getElementById('vol-range').value=${w};renderTraining()" style="font-size:10px;padding:4px 10px">${l}</button>`).join('')}
+          onclick="window.setVolRange(${w})" style="font-size:10px;padding:4px 10px">${l}</button>`).join('')}
       </div>
-      <input type="hidden" id="vol-range" value="${volRangeWeeks}">
       <span style="font-size:10px;color:#444;margin-left:4px">Most recent: week of ${fmtDate(latestWeek)}</span>
     </div>
 
@@ -4329,6 +4552,100 @@ function renderVolumeTab(u) {
       <canvas id="volume-chart" style="max-height:320px"></canvas>
     </div>
 
+    <!-- TONNAGE OVERVIEW CARDS -->
+    ${(() => {
+      const weeklyTon = getWeeklyTonnage(u.id);
+      const tonWeeks = Object.keys(weeklyTon).sort().slice(-volRangeWeeks);
+      const sessions = getUserSessions(u.id).filter(s => {
+        const wk = (() => { const d=new Date(s.date+'T00:00:00'); const ws=new Date(d); ws.setDate(d.getDate()-d.getDay()); return ws.toISOString().split('T')[0]; })();
+        return tonWeeks.includes(wk);
+      }).sort((a,b)=>b.date.localeCompare(a.date));
+      const exTon = getExerciseTonnage(u.id);
+      const totalTon = tonWeeks.reduce((s,w)=>s+(weeklyTon[w]||0),0);
+      const peakWeek = tonWeeks.reduce((best,w)=>weeklyTon[w]>weeklyTon[best]?w:best, tonWeeks[0]||'');
+      const avgWeekly = tonWeeks.length ? Math.round(totalTon/tonWeeks.length) : 0;
+      const topExercises = Object.entries(exTon)
+        .filter(([,v])=>v.total>0)
+        .sort(([,a],[,b])=>b.total-a.total).slice(0,5);
+      // Sessions sorted by tonnage
+      const sessionsByTon = sessions.map(s=>({...s, ton: calcSessionTonnage(s)})).filter(s=>s.ton>0).sort((a,b)=>b.ton-a.ton).slice(0,5);
+      const maxTon = Math.max(...tonWeeks.map(w=>weeklyTon[w]||0), 1);
+
+      return `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><span class="card-title-icon">🏋️</span>Training Tonnage
+          <span style="margin-left:auto;font-size:11px;color:#555">weight × reps across all sets</span>
+        </div>
+        <!-- Headline stats -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="flex:1;min-width:110px;background:rgba(199,125,255,0.07);border:1px solid rgba(199,125,255,0.2);border-radius:8px;padding:14px">
+            <div style="font-size:9px;color:rgba(199,125,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Period Total</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#c77dff;line-height:1">${(totalTon/1000).toFixed(1)}<span style="font-size:13px;opacity:0.6"> k lbs</span></div>
+          </div>
+          <div style="flex:1;min-width:110px;background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:14px">
+            <div style="font-size:9px;color:rgba(0,229,255,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Avg / Week</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#00e5ff;line-height:1">${(avgWeekly/1000).toFixed(1)}<span style="font-size:13px;opacity:0.6"> k lbs</span></div>
+          </div>
+          <div style="flex:1;min-width:110px;background:rgba(105,255,71,0.07);border:1px solid rgba(105,255,71,0.2);border-radius:8px;padding:14px">
+            <div style="font-size:9px;color:rgba(105,255,71,0.7);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Peak Week</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#69ff47;line-height:1">${((weeklyTon[peakWeek]||0)/1000).toFixed(1)}<span style="font-size:13px;opacity:0.6"> k</span></div>
+            <div style="font-size:10px;color:#444;margin-top:2px">${fmtDate(peakWeek)}</div>
+          </div>
+        </div>
+
+        <!-- Weekly tonnage sparkbar -->
+        <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Weekly Tonnage Trend</div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:60px;margin-bottom:14px">
+          ${tonWeeks.map(w => {
+            const t = weeklyTon[w]||0;
+            const h = Math.max(4, Math.round((t/maxTon)*56));
+            const isPeak = w===peakWeek;
+            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="width:100%;height:${h}px;background:${isPeak?'#c77dff':'rgba(199,125,255,0.4)'};border-radius:2px 2px 0 0;transition:height 0.3s" title="${fmtDate(w)}: ${(t/1000).toFixed(1)}k lbs"></div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#333;margin-top:-8px;margin-bottom:16px">
+          <span>${fmtDate(tonWeeks[0]||'')}</span><span>${fmtDate(tonWeeks[tonWeeks.length-1]||'')}</span>
+        </div>
+
+        <!-- Top exercises by tonnage -->
+        ${topExercises.length ? `
+        <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Top Exercises by Tonnage</div>
+        ${topExercises.map(([name, v], i) => {
+          const barW = (v.total / (topExercises[0][1].total||1) * 100).toFixed(0);
+          const col = ['#c77dff','#00e5ff','#69ff47','#ffe040','#ff6b2b'][i] || '#888';
+          return `<div style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+              <span style="color:${col}">${name}</span>
+              <span style="color:#555">${(v.total/1000).toFixed(1)}k lbs · ${v.sessions} sessions · avg ${(v.avgPerSession/1000).toFixed(1)}k</span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${barW}%;background:${col};border-radius:3px"></div>
+            </div>
+          </div>`;
+        }).join('')}` : ''}
+
+        <!-- Heaviest sessions -->
+        ${sessionsByTon.length ? `
+        <div style="font-size:10px;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin:14px 0 8px">Heaviest Sessions</div>
+        ${sessionsByTon.map((s,i) => {
+          const medal = ['🥇','🥈','🥉','',''][i]||'';
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+            <span style="font-size:14px;min-width:20px">${medal}</span>
+            <div style="flex:1">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:${u.color}">${s.label||'Session'}</div>
+              <div style="font-size:10px;color:#444">${fmtDate(s.date)} · Day ${s.cycle||'?'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#c77dff">${(s.ton/1000).toFixed(1)}k</div>
+              <div style="font-size:9px;color:#444">lbs</div>
+            </div>
+          </div>`;
+        }).join('')}` : ''}
+      </div>`;
+    })()}
+
     <!-- FREQUENCY TABLE -->
     <div class="card">
       <div class="card-title"><span class="card-title-icon">📅</span>Muscle Frequency Grid
@@ -4364,7 +4681,6 @@ function mountVolumeChart(userId) {
   if (!ctx) return;
   const ch = Chart.getChart(ctx); if (ch) ch.destroy();
   const weeklyVol = getWeeklyVolume(userId);
-  const volRangeWeeks = parseInt(document.getElementById('vol-range')?.value || 8);
   const weeks = Object.keys(weeklyVol).sort().slice(-volRangeWeeks);
   if (!weeks.length) return;
   const muscles = [...new Set(Object.values(weeklyVol).flatMap(w => Object.keys(w)))].sort();
