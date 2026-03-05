@@ -909,7 +909,7 @@ function renderDashboard() {
         <div style="text-align:right">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:${u.color};line-height:1">${currentW}<span style="font-size:13px;opacity:0.6"> lbs</span></div>
           ${recap?.weekChange!==null&&recap?.weekChange!==undefined?`<div style="font-size:11px;color:${recap.weekChange<=0?'#69ff47':'#ff4d8d'}">${recap.weekChange<=0?'▼':'▲'} ${Math.abs(recap.weekChange).toFixed(1)} this week</div>`:''}
-          ${(() => { const pred=calcGoalPrediction(u); if(!pred||pred.reached||pred.gained||!pred.daysNeeded)return ''; const d=pred.daysNeeded; const col=d<=30?'#69ff47':d<=90?'#ffe040':'#00e5ff'; return `<div style="font-size:11px;color:${col};margin-top:3px;font-family:'Bebas Neue',sans-serif;letter-spacing:.05em">⏳ ${d}d to goal</div>`; })()}
+          ${(() => { const pred=calcGoalPrediction(u); if(!pred||pred.reached||pred.gained||!pred.daysNeeded)return ''; const d=pred.daysNeeded; const col=d<=30?'#69ff47':d<=90?'#ffe040':'#00e5ff'; return `<div style="font-size:11px;color:${col};margin-top:3px;font-family:'Bebas Neue',sans-serif;letter-spacing:.05em">⏳ ${d} days to goal</div>`; })()}
         </div>
         <div style="font-size:20px;color:${u.color}88;transition:transform 0.2s" id="ca-athlete-${u.id}">▶</div>
       </div>
@@ -4014,6 +4014,10 @@ function startTrainingListener() {
 }
 async function saveTrainingSession(session) {
   if (!db) return;
+  // Persist any custom block names for this user
+  if (session.block && !PRESET_BLOCKS.includes(session.block) && session.block !== '__custom__') {
+    addCustomBlock(session.userId, session.block);
+  }
   await set(ref(db, `training/${session.userId}/${session.id}`), session);
 }
 async function deleteTrainingSession(userId, sessionId) {
@@ -4270,6 +4274,7 @@ function renderTraining() {
       </div>
       <div style="margin-left:auto;display:flex;gap:8px">
         ${sessions.length ? `<button class="btn btn-sm btn-ghost" onclick="window.copyLastSession('${u.id}')">⎘ Copy Last</button>` : ''}
+        <button class="btn btn-sm btn-ghost" onclick="window.logRestDay('${u.id}')">🛌 Rest Day</button>
         <button class="btn btn-sm btn-ghost" onclick="window.showAddSession('${u.id}')">+ New Session</button>
       </div>
     </div>
@@ -4294,9 +4299,46 @@ const BLOCK_COLORS = {
   'Test Week':      '#c77dff',
   'Off Season':     '#888',
 };
-function blockColor(b) { return BLOCK_COLORS[b] || '#555'; }
+function blockColor(b) { return BLOCK_COLORS[b] || '#a855f7'; }
+
+// ── CUSTOM BLOCK PERSISTENCE ─────────────────────────────────
+const PRESET_BLOCKS = ['Accumulation','Intensification','Peaking','Deload','Test Week','Off Season'];
+function getCustomBlocks(userId) {
+  try { return JSON.parse(localStorage.getItem('prophecy_custom_blocks_' + userId) || '[]'); } catch(e) { return []; }
+}
+function addCustomBlock(userId, name) {
+  if (!name || PRESET_BLOCKS.includes(name)) return;
+  const existing = getCustomBlocks(userId);
+  if (existing.includes(name)) return;
+  try { localStorage.setItem('prophecy_custom_blocks_' + userId, JSON.stringify([...existing, name])); } catch(e) {}
+}
+function buildBlockOptions(userId, selected) {
+  const presetHTML = PRESET_BLOCKS.map(b =>
+    `<option value="${b}" ${selected===b?'selected':''}>${b}</option>`
+  ).join('');
+  const customs = getCustomBlocks(userId);
+  const customHTML = customs.length
+    ? customs.map(b => `<option value="${b}" ${selected===b?'selected':''}>${b}</option>`).join('')
+    : '';
+  const customSep = customs.length ? `<option disabled>── Custom ──</option>` : '';
+  return `<option value="" ${!selected?'selected':''}>— None —</option>
+    ${presetHTML}
+    ${customSep}${customHTML}
+    <option value="__custom__">+ Add custom block...</option>`;
+}
+window.handleBlockSelect = function(selectEl, userId, onSave) {
+  if (selectEl.value !== '__custom__') { onSave(selectEl.value); return; }
+  const name = prompt('Enter custom block name:');
+  if (!name || !name.trim()) { selectEl.value = ''; return; }
+  const trimmed = name.trim();
+  addCustomBlock(userId, trimmed);
+  onSave(trimmed);
+  // Rebuild options with new custom name selected
+  selectEl.innerHTML = buildBlockOptions(userId, trimmed);
+};
 
 function renderSessionLog(u, sessions) {
+  const restMetricsHTML = renderRestMetrics(u, sessions);
   if (!sessions.length) return `<div class="empty" style="padding:40px">
     <div class="empty-icon">📋</div>
     <p>No sessions yet. Import your logs or add one manually.</p>
@@ -4324,7 +4366,7 @@ function renderSessionLog(u, sessions) {
     return ia - ib;
   });
 
-  return blockKeys.map(block => {
+  return restMetricsHTML + blockKeys.map(block => {
     const byCycle = byBlock[block];
     const col = blockColor(block);
     const blockLabel = block || 'Unassigned';
@@ -4333,7 +4375,8 @@ function renderSessionLog(u, sessions) {
       const [bm,bd='0'] = b.split('.').map(Number);
       return bm - am || bd - ad;
     });
-    const totalSessions = cycleKeys.reduce((s,c) => s + byCycle[c].length, 0);
+    const totalSessions = cycleKeys.reduce((s,c) => s + byCycle[c].filter(x=>x.type!=='rest').length, 0);
+    const totalRestDays = cycleKeys.reduce((s,c) => s + byCycle[c].filter(x=>x.type==='rest').length, 0);
     const blockId = 'block-' + u.id + '-' + block.replace(/\s+/g,'-');
     const inner = cycleKeys.map(cycle => {
       const cs = byCycle[cycle].sort((a,b) => {
@@ -4347,14 +4390,104 @@ function renderSessionLog(u, sessions) {
           <span style="flex:1;height:1px;background:rgba(255,255,255,0.04)"></span>
           <span style="color:#2a2a4a">${cs.length} session${cs.length!==1?'s':''}</span>
         </div>
-        ${cs.map(s => renderSessionCard(u, s)).join('')}
+        ${cs.map(s => s.type==='rest' ? renderRestDayRow(u,s) : renderSessionCard(u, s)).join('')}
       </div>`;
     }).join('');
     // Make each block a collapsible section
     const headerHTML = `<span style="color:${col};font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.12em">${blockLabel}</span>
-      <span style="font-size:10px;color:${col}55;margin-left:8px;background:${col}18;padding:2px 8px;border-radius:4px">${totalSessions} sessions</span>`;
+      <span style="font-size:10px;color:${col}55;margin-left:8px;background:${col}18;padding:2px 8px;border-radius:4px">${totalSessions} sessions${totalRestDays?" · "+totalRestDays+" rest":""}</span>`;
     return collapseSection(blockId, headerHTML, `<div style="padding-top:4px">${inner}</div>`, true);
   }).join('');
+}
+
+// ── REST DAY RENDERING ───────────────────────────────────────
+function renderRestDayRow(u, s) {
+  return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;
+      border-radius:6px;background:rgba(105,255,71,0.04);border:1px solid rgba(105,255,71,0.12)">
+    <span style="font-size:18px">🛌</span>
+    <div style="flex:1">
+      <span style="font-size:12px;color:#69ff47;font-family:'Bebas Neue',sans-serif;letter-spacing:0.06em">Rest Day</span>
+      <span style="font-size:11px;color:#555;margin-left:8px">${fmtDate(s.date)}</span>
+      ${s.notes ? `<span style="font-size:11px;color:#444;margin-left:8px;font-style:italic">${s.notes}</span>` : ''}
+    </div>
+    <button class="entry-del" onclick="window.confirmDelSession('${u.id}','${s.id}')">✕</button>
+  </div>`;
+}
+
+// ── REST DAY METRICS WIDGET ──────────────────────────────────
+function renderRestMetrics(u, sessions) {
+  const restDays = sessions.filter(s => s.type === 'rest').sort((a,b) => b.date.localeCompare(a.date));
+  const trainDays = sessions.filter(s => s.type !== 'rest').sort((a,b) => b.date.localeCompare(a.date));
+  if (!restDays.length || !trainDays.length) return '';
+
+  // Days since last rest
+  const lastRest = restDays[0].date;
+  const daysSince = Math.floor((new Date() - new Date(lastRest)) / 864e5);
+
+  // Consecutive training days (streak without rest)
+  let trainStreak = 0;
+  const allSorted = sessions.sort((a,b) => b.date.localeCompare(a.date));
+  for (const s of allSorted) {
+    if (s.type === 'rest') break;
+    trainStreak++;
+  }
+
+  // Weekly rest ratio (last 4 weeks)
+  const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+  const recentAll = sessions.filter(s => new Date(s.date) >= fourWeeksAgo);
+  const recentRest = recentAll.filter(s => s.type === 'rest').length;
+  const recentTrain = recentAll.filter(s => s.type !== 'rest').length;
+  const restRatio = recentAll.length ? Math.round((recentRest / recentAll.length) * 100) : 0;
+
+  // Weight on rest day vs training day correlation
+  let weightNote = '';
+  if (u.entries && u.entries.length > 3) {
+    const restWeights = restDays.map(r => {
+      const match = u.entries.find(e => e.date === r.date) ||
+        u.entries.reduce((best, e) => Math.abs(new Date(e.date)-new Date(r.date)) < Math.abs(new Date(best.date)-new Date(r.date)) ? e : best);
+      return match && Math.abs(new Date(match.date)-new Date(r.date))/864e5 < 2 ? match.weight : null;
+    }).filter(Boolean);
+    const trainWeights = trainDays.slice(0,restWeights.length).map(t => {
+      const match = u.entries.find(e => e.date === t.date) ||
+        u.entries.reduce((best, e) => Math.abs(new Date(e.date)-new Date(t.date)) < Math.abs(new Date(best.date)-new Date(t.date)) ? e : best);
+      return match && Math.abs(new Date(match.date)-new Date(t.date))/864e5 < 2 ? match.weight : null;
+    }).filter(Boolean);
+    if (restWeights.length >= 2 && trainWeights.length >= 2) {
+      const avgRest = restWeights.reduce((s,v)=>s+v,0)/restWeights.length;
+      const avgTrain = trainWeights.reduce((s,v)=>s+v,0)/trainWeights.length;
+      const diff = (avgRest - avgTrain).toFixed(1);
+      weightNote = parseFloat(diff) > 0.3
+        ? `Avg weight ${Math.abs(diff)} lbs higher on rest days (water retention normal)`
+        : parseFloat(diff) < -0.3
+        ? `Avg weight ${Math.abs(diff)} lbs lower on rest days`
+        : 'Weight similar on rest vs training days';
+    }
+  }
+
+  const streakCol = trainStreak >= 7 ? '#ff4d8d' : trainStreak >= 4 ? '#ffe040' : '#69ff47';
+  const sinceCol  = daysSince >= 7 ? '#ff4d8d' : daysSince >= 4 ? '#ffe040' : '#69ff47';
+
+  return `<div class="card" style="margin-bottom:12px;border-color:rgba(105,255,71,0.15)">
+    <div class="card-title"><span class="card-title-icon">🛌</span>Rest Day Stats</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="text-align:center;min-width:70px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:${sinceCol};line-height:1">${daysSince}</div>
+        <div style="font-size:10px;color:#555;letter-spacing:.08em">days since rest</div>
+      </div>
+      <div style="text-align:center;min-width:70px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:${streakCol};line-height:1">${trainStreak}</div>
+        <div style="font-size:10px;color:#555;letter-spacing:.08em">training streak</div>
+      </div>
+      <div style="text-align:center;min-width:70px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#00e5ff;line-height:1">${restRatio}%</div>
+        <div style="font-size:10px;color:#555;letter-spacing:.08em">rest ratio (4wk)</div>
+      </div>
+      <div style="flex:1;min-width:140px;display:flex;align-items:center">
+        <div style="font-size:11px;color:#444;font-style:italic">${weightNote || (restDays.length + ' rest days logged')}</div>
+      </div>
+    </div>
+    ${trainStreak >= 6 ? '<div style="font-size:11px;color:#ff4d8d;background:rgba(255,77,141,0.08);padding:6px 10px;border-radius:4px">⚠ High training streak — consider a rest day soon</div>' : ''}
+  </div>`;
 }
 
 function renderSessionCard(u, s) {
@@ -5007,6 +5140,32 @@ window.confirmImport = async function(userId) {
 };
 
 // ── ADD SESSION MODAL ─────────────────────────────────────────
+window.logRestDay = async function(userId) {
+  const today = new Date().toISOString().split('T')[0];
+  const sessions = getUserSessions(userId);
+  // Check if rest day already logged today
+  if (sessions.find(s => s.date === today && s.type === 'rest')) {
+    alert('Rest day already logged for today!');
+    return;
+  }
+  const note = prompt('Rest day note (optional):', '') ?? '';
+  const session = {
+    id: genId(), userId,
+    type: 'rest',
+    date: today,
+    label: 'Rest Day',
+    cycle: sessions[0]?.cycle || '',
+    block: sessions[0]?.block || '',
+    notes: note,
+    exercises: [],
+  };
+  if (!trainingSessions[userId]) trainingSessions[userId] = [];
+  trainingSessions[userId].unshift(session);
+  await saveTrainingSession(session);
+  trainingSubTab = 'log';
+  renderTraining();
+};
+
 window.showAddSession = function(userId) {
   const el = document.getElementById('confirmDialog');
   el.style.display = 'flex';
@@ -5016,18 +5175,12 @@ window.showAddSession = function(userId) {
     <div class="form-group"><label>Session Label</label><input type="text" id="ns-label" placeholder="e.g. Day 1 — Primary Bench"></div>
     <div class="form-group"><label>Cycle (e.g. 1.1, 1.2, 2.1)</label><input type="text" id="ns-cycle" placeholder="1.1"></div>
     <div class="form-group"><label>Block / Phase</label>
-      <select id="ns-block" style="width:100%;background:#0d0d1a;border:1px solid #1e1e3a;color:var(--text);padding:10px;border-radius:6px;font-size:13px" onchange="document.getElementById('ns-block-custom-wrap').style.display=this.value==='Custom'?'block':'none'">
-        <option value="">— None —</option>
-        <option value="Accumulation">Accumulation</option>
-        <option value="Intensification">Intensification</option>
-        <option value="Peaking">Peaking</option>
-        <option value="Deload">Deload</option>
-        <option value="Test Week">Test Week</option>
-        <option value="Off Season">Off Season</option>
-        <option value="Custom">Custom</option>
+      <select id="ns-block" style="width:100%;background:#0d0d1a;border:1px solid #1e1e3a;color:var(--text);padding:10px;border-radius:6px;font-size:13px"
+        onchange="window.handleBlockSelect(this,'${userId}',v=>{document.getElementById('ns-block-val').value=v;})">
+        ${buildBlockOptions(userId, '')}
       </select>
+      <input type="hidden" id="ns-block-val" value="">
     </div>
-    <div class="form-group" id="ns-block-custom-wrap" style="display:none"><label>Custom Block Name</label><input type="text" id="ns-block-custom" placeholder="e.g. Hypertrophy, GPP"></div>
     <div class="form-group"><label>Notes (optional)</label><input type="text" id="ns-notes" placeholder="How it felt, deload, etc."></div>
     <div style="font-size:11px;color:#555;margin-bottom:8px">Add exercises after creating the session.</div>
 
@@ -5042,7 +5195,7 @@ window.showAddSession = function(userId) {
       date:  document.getElementById('ns-date').value,
       label: document.getElementById('ns-label').value || 'Session',
       cycle: document.getElementById('ns-cycle').value || '1.1',
-      block: (() => { const b = document.getElementById('ns-block')?.value||''; return b==='Custom' ? (document.getElementById('ns-block-custom')?.value||'') : b; })(),
+      block: document.getElementById('ns-block-val')?.value || document.getElementById('ns-block')?.value || '',
       notes: document.getElementById('ns-notes').value || '',
       exercises: [],
     };
@@ -5073,15 +5226,11 @@ window.copyLastSession = function(userId) {
     <div class="form-group"><label>Session Label</label><input type="text" id="cs-label" value="${last.label||'Session'}"></div>
     <div class="form-group"><label>Cycle / Block</label><input type="text" id="cs-cycle" value="${last.cycle||''}"></div>
     <div class="form-group"><label>Block / Phase</label>
-      <select id="cs-block" style="width:100%;background:#0d0d1a;border:1px solid #1e1e3a;color:var(--text);padding:10px;border-radius:6px;font-size:13px">
-        <option value="">— None —</option>
-        <option value="Accumulation" ${last.block==='Accumulation'?'selected':''}>Accumulation</option>
-        <option value="Intensification" ${last.block==='Intensification'?'selected':''}>Intensification</option>
-        <option value="Peaking" ${last.block==='Peaking'?'selected':''}>Peaking</option>
-        <option value="Deload" ${last.block==='Deload'?'selected':''}>Deload</option>
-        <option value="Test Week" ${last.block==='Test Week'?'selected':''}>Test Week</option>
-        <option value="Off Season" ${last.block==='Off Season'?'selected':''}>Off Season</option>
+      <select id="cs-block" style="width:100%;background:#0d0d1a;border:1px solid #1e1e3a;color:var(--text);padding:10px;border-radius:6px;font-size:13px"
+        onchange="window.handleBlockSelect(this,'${userId}',v=>{document.getElementById('cs-block-val').value=v;})">
+        ${buildBlockOptions(userId, last.block||'')}
       </select>
+      <input type="hidden" id="cs-block-val" value="${last.block||''}">
     </div>
     <div style="font-size:11px;color:#444;margin-bottom:16px">
       <div style="color:#666;margin-bottom:6px">Exercises to copy:</div>
@@ -5098,7 +5247,7 @@ window.copyLastSession = function(userId) {
       date:  document.getElementById('cs-date').value,
       label: document.getElementById('cs-label').value || last.label || 'Session',
       cycle: document.getElementById('cs-cycle').value || last.cycle || '',
-      block: document.getElementById('cs-block')?.value || last.block || '',
+      block: document.getElementById('cs-block-val')?.value || document.getElementById('cs-block')?.value || last.block || '',
       notes: '',
       exercises: (last.exercises||[]).map(ex => ({
         id: genId(), name: ex.name,
@@ -5145,17 +5294,9 @@ window.showEditSession = function(userId, sessionId) {
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <select id="es-block" style="background:#0d0d1a;border:1px solid #1e1e3a;color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;flex:1"
-          onchange="window.updateSessionField('${userId}','${sessionId}','block',this.value)">
-          <option value="" ${!s.block?'selected':''}>— No Block —</option>
-          <option value="Accumulation" ${s.block==='Accumulation'?'selected':''}>Accumulation</option>
-          <option value="Intensification" ${s.block==='Intensification'?'selected':''}>Intensification</option>
-          <option value="Peaking" ${s.block==='Peaking'?'selected':''}>Peaking</option>
-          <option value="Deload" ${s.block==='Deload'?'selected':''}>Deload</option>
-          <option value="Test Week" ${s.block==='Test Week'?'selected':''}>Test Week</option>
-          <option value="Off Season" ${s.block==='Off Season'?'selected':''}>Off Season</option>
-          <option value="__custom__" ${s.block&&!['Accumulation','Intensification','Peaking','Deload','Test Week','Off Season',''].includes(s.block)?'selected':''}>Custom...</option>
+          onchange="window.handleBlockSelect(this,'${userId}',v=>window.updateSessionField('${userId}','${sessionId}','block',v))">
+          ${buildBlockOptions(userId, s.block||'')}
         </select>
-        ${(()=>{ const predef=['Accumulation','Intensification','Peaking','Deload','Test Week','Off Season','']; return s.block&&!predef.includes(s.block) ? `<input type="text" value="${s.block}" placeholder="Custom block name" style="margin-top:6px;width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px" onchange="window.updateSessionField('${userId}','${sessionId}','block',this.value)">` : ''; })()}
         <input type="text" value="${s.cycle||''}" placeholder="Cycle e.g. 2.1"
           style="width:100px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px"
           onchange="window.updateSessionField('${userId}','${sessionId}','cycle',this.value)">
