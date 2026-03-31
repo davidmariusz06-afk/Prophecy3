@@ -648,6 +648,7 @@ function initFirebase(config) {
         activeUserId = users.length > 0 ? users[0].id : null;
       document.getElementById("syncDot").classList.add("connected");
       document.getElementById("syncLabel").textContent = "Live sync";
+      clearEarnedCache(); // invalidate badge cache on user data change
       renderAll();
     }, (err) => {
       document.getElementById("syncLabel").textContent = "Connection failed";
@@ -2223,6 +2224,21 @@ window.confirmDelPR = function(userId, liftKey, entryId, weight) {
 
 // ── BADGES ─────────────────────────────────────────────────
 // Groups: weight_loss, consistency, bench, squat, deadlift, ohp, total
+// ── TONNAGE CACHE ─────────────────────────────────────────────────────────────
+const _tonnageCache = {};
+function getTonnage(userId) {
+  if (_tonnageCache[userId] !== undefined) return _tonnageCache[userId];
+  let t = 0;
+  (trainingSessions[userId] || []).forEach(s =>
+    (s.exercises||[]).forEach(ex =>
+      (ex.sets||[]).forEach(st => { t += (st.weight||0)*(st.reps||0); })
+    )
+  );
+  _tonnageCache[userId] = t;
+  return t;
+}
+function invalidateTonnageCache(userId) { delete _tonnageCache[userId]; }
+
 const BADGE_GROUPS = [
   {
     id:"weight_loss", label:"Weight Loss", color:"#69ff47",
@@ -2314,12 +2330,12 @@ const BADGE_GROUPS = [
   {
     id:"tonnage", label:"Tonnage", color:"#ff6b2b",
     badges:[
-      { id:"ton_10k",   icon:"⚙️",  label:"10k Club",       check: u => { let t=0; (Object.values(trainingSessions[u.id]||{})).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(st=>{t+=(st.weight||0)*(st.reps||0);}))); return t>=10000; } },
-      { id:"ton_50k",   icon:"🔩",  label:"50k Tonnage",    check: u => { let t=0; (Object.values(trainingSessions[u.id]||{})).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(st=>{t+=(st.weight||0)*(st.reps||0);}))); return t>=50000; } },
-      { id:"ton_100k",  icon:"💥",  label:"100k Club",      check: u => { let t=0; (Object.values(trainingSessions[u.id]||{})).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(st=>{t+=(st.weight||0)*(st.reps||0);}))); return t>=100000; } },
-      { id:"ton_250k",  icon:"🏗️",  label:"Quarter Million", check: u => { let t=0; (Object.values(trainingSessions[u.id]||{})).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(st=>{t+=(st.weight||0)*(st.reps||0);}))); return t>=250000; } },
-      { id:"ton_500k",  icon:"⚡",  label:"Half Million",   check: u => { let t=0; (Object.values(trainingSessions[u.id]||{})).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(st=>{t+=(st.weight||0)*(st.reps||0);}))); return t>=500000; } },
-      { id:"ton_1m",    icon:"👑",  label:"1 Million lbs",  check: u => { let t=0; (Object.values(trainingSessions[u.id]||{})).forEach(s=>(s.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(st=>{t+=(st.weight||0)*(st.reps||0);}))); return t>=1000000; } },
+      { id:"ton_10k",   icon:"⚙️",  label:"10k Club",       check: u => getTonnage(u.id) >= 10000 },
+      { id:"ton_50k",   icon:"🔩",  label:"50k Tonnage",    check: u => getTonnage(u.id) >= 50000 },
+      { id:"ton_100k",  icon:"💥",  label:"100k Club",      check: u => getTonnage(u.id) >= 100000 },
+      { id:"ton_250k",  icon:"🏗️",  label:"Quarter Million", check: u => getTonnage(u.id) >= 250000 },
+      { id:"ton_500k",  icon:"⚡",  label:"Half Million",   check: u => getTonnage(u.id) >= 500000 },
+      { id:"ton_1m",    icon:"👑",  label:"1 Million lbs",  check: u => getTonnage(u.id) >= 1000000 },
     ]
   },
 
@@ -2364,13 +2380,18 @@ const BADGE_GROUPS = [
 
 function getAllBadges() { return BADGE_GROUPS.flatMap(g=>g.badges.map(b=>({...b,groupColor:g.color,groupId:g.id}))); }
 
+const _earnedCache = {};
 function getEarnedBadges(u) {
+  if (_earnedCache[u.id]) return _earnedCache[u.id];
   const manual = u.manualBadges || {};
-  return getAllBadges().filter(b => {
+  const result = getAllBadges().filter(b => {
     if (manual[b.id]) return true;
     try { return b.check(u); } catch(e){ return false; }
   });
+  _earnedCache[u.id] = result;
+  return result;
 }
+function clearEarnedCache() { Object.keys(_earnedCache).forEach(k => delete _earnedCache[k]); }
 
 function renderBadges(u) {
   const cd = u.customBadgeDefs || {};
@@ -4304,11 +4325,14 @@ function startTrainingListener() {
         }))
       })).sort((a,b) => b.date.localeCompare(a.date));
     });
+    Object.keys(_tonnageCache).forEach(uid => delete _tonnageCache[uid]); // invalidate on sync
     if (currentView === 'training') renderTraining();
+    startDisciplineListener();
   });
 }
 async function saveTrainingSession(session) {
   if (!db) return;
+  invalidateTonnageCache(session.userId); // clear memoized tonnage
   // Persist any custom block names for this user
   if (session.block && !PRESET_BLOCKS.includes(session.block) && session.block !== '__custom__') {
     addCustomBlock(session.userId, session.block);
@@ -4564,7 +4588,6 @@ window.setVolCustomRange = function() {
 // ── RENDER TRAINING TAB ───────────────────────────────────────
 function renderTraining() {
   startTrainingListener();
-  startDisciplineListener();
   const el = document.getElementById('view-training');
   if (!users.length) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">🏋️</div><p>Add athletes first.</p></div>`;
@@ -6050,8 +6073,10 @@ function getDisciplineEntry(userId, date) {
   return disciplines[userId]?.[date] || null;
 }
 
+let disciplineListening = false;
 function startDisciplineListener() {
-  if (!db || !users.length) return;
+  if (disciplineListening || !db || !users.length) return;
+  disciplineListening = true;
   onValue(ref(db, 'disciplines'), snap => {
     disciplines = {};
     const data = snap.val() || {};
@@ -6126,7 +6151,6 @@ function getWeeklyAvg(userId, habits, weeksBack = 4) {
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderDiscipline() {
-  startDisciplineListener();
   const el = document.getElementById('view-discipline');
   if (!users.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔥</div><p>Add athletes first.</p></div>';
@@ -6521,6 +6545,8 @@ function bindSettingsEvents(userId, habits) {
 
 window.setDisciplineTab = function(tab) { disciplineSubTab = tab; renderDiscipline(); };
 
+// Start discipline listener alongside other Firebase listeners
+function initDisciplineListenerOnReady() { if (db && users.length) startDisciplineListener(); }
 initFirebase(HARDCODED_CONFIG);
 </script>
 </body>
